@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>舞台配置図 v15.1 安定版</title>
+<title>舞台配置図 v14.1</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -15,35 +15,38 @@ body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'
 #toolbar{
 display:flex;align-items:center;gap:6px;flex-wrap:wrap;
 padding:5px 10px;background:white;border-bottom:1px solid #ddd;
-min-height:42px;
+min-height:42px;flex-shrink:0;
 }
 
 button{
 padding:4px 10px;font-size:11px;border:1px solid #ccc;border-radius:5px;
-background:white;cursor:pointer;
+background:white;cursor:pointer;color:#333;white-space:nowrap;
 }
 button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
 
 #main{display:flex;flex:1;overflow:hidden;}
 
 #sidebar{
-width:160px;background:white;border-right:1px solid #ddd;
-display:flex;flex-direction:column;
+width:160px;min-width:160px;background:white;border-right:1px solid #ddd;
+display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
 }
 
 #canvas-wrap{
-flex:1;overflow:auto;background:#d8d6cf;position:relative;
+flex:1;overflow:auto;background:#d8d6cf;
+position:relative;
 }
 
 #zoom-container{
 transform-origin:top left;
-position:absolute;top:20px;left:20px;
+position:absolute;
+top:20px;left:20px;
 }
 
 #stage{
 position:relative;background:white;
-border:1px solid #aaa;
+border:1px solid #aaa;border-radius:3px;
 box-shadow:0 2px 16px rgba(0,0,0,.18);
+overflow:hidden;
 }
 
 .elem{position:absolute;cursor:move;user-select:none;}
@@ -51,11 +54,12 @@ box-shadow:0 2px 16px rgba(0,0,0,.18);
 .chair{
 border-radius:50%;border:2px solid;background:white;
 display:flex;align-items:center;justify-content:center;
-font-size:11px;
+font-weight:600;
 }
 
-.label{
-font-size:11px;background:white;border:1px solid #aaa;padding:2px 6px;
+.label-elem{
+font-size:11px;background:rgba(255,255,255,.9);
+padding:2px 6px;border:1px solid #aaa;border-radius:3px;
 }
 
 .rect-elem{border:2px solid #555;background:rgba(200,200,200,.1);}
@@ -63,41 +67,39 @@ font-size:11px;background:white;border:1px solid #aaa;padding:2px 6px;
 #svg-layer{
 position:absolute;inset:0;overflow:visible;pointer-events:none;
 }
+
 </style>
 </head>
 
 <body>
 
+<!-- ── Toolbar ── -->
 <div id="toolbar">
-
-<button onclick="setTool('select')" id="btn-select">選択</button>
+<button onclick="setTool('select')" id="btn-select" class="active">選択</button>
 <button onclick="setTool('chair')" id="btn-chair">椅子</button>
-<button onclick="setTool('arc')" id="btn-arc">弧</button>
+<button onclick="setTool('arc')" id="btn-arc">弧配置</button>
 <button onclick="setTool('label')" id="btn-label">ラベル</button>
 <button onclick="setTool('rect')" id="btn-rect">矩形</button>
 <button onclick="setTool('dim')" id="btn-dim">寸法</button>
 
-<button onclick="groupSelected()">Group</button>
+<button onclick="saveTemplate()">保存</button>
+<button onclick="loadTemplate()">読込</button>
 <button onclick="exportPNG()">PNG</button>
-
+<button onclick="clearAll()">削除</button>
 </div>
 
+<!-- ── Main ── -->
 <div id="main">
 
-<div id="sidebar">
-<div style="padding:10px;font-size:11px;color:#888;">v15.1</div>
-</div>
+<div id="sidebar"></div>
 
 <div id="canvas-wrap">
-
 <div id="zoom-container">
 <div id="stage">
 <canvas id="bg"></canvas>
-<div class="stage-grid"></div>
 <svg id="svg-layer"></svg>
 </div>
 </div>
-
 </div>
 
 </div>
@@ -107,75 +109,60 @@ position:absolute;inset:0;overflow:visible;pointer-events:none;
 pdfjsLib.GlobalWorkerOptions.workerSrc =
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-/* ───── STATE ───── */
+/* ── STATE ── */
 let tool='select';
 let elements=[];
 let selected=null;
 
-let zoomLevel=1;
 let stageW=960,stageH=760;
+let zoom=1;
 
 let arcPts=[];
 let dimStart=null;
-let dims=[];
+let dimLines=[];
+let id=0;
 
-let groupId=1;
-let idCounter=0;
-
-/* ───── DOM ───── */
+/* ── DOM ── */
 const stage=document.getElementById('stage');
 const svg=document.getElementById('svg-layer');
 const zoomC=document.getElementById('zoom-container');
 
-/* ───── TOOL ───── */
+/* ── TOOL ── */
 function setTool(t){
 tool=t;
 arcPts=[];
 dimStart=null;
+
+document.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+const btn=document.getElementById('btn-'+t);
+if(btn)btn.classList.add('active');
 }
 
-/* ───── STAGE ───── */
-function setStageSize(w,h){
-stageW=w;stageH=h;
-stage.style.width=w+'px';
-stage.style.height=h+'px';
-svg.setAttribute('width',w);
-svg.setAttribute('height',h);
-updateZoom();
-}
-
-/* ───── ZOOM ───── */
-function updateZoom(){
-zoomC.style.transform=`scale(${zoomLevel})`;
-zoomC.style.width=(stageW*zoomLevel)+'px';
-zoomC.style.height=(stageH*zoomLevel)+'px';
-}
-
-/* ───── ADD ───── */
+/* ── ADD ── */
 function add(type,x,y,opts={}){
 const el=document.createElement('div');
 el.className='elem';
 el.style.left=x+'px';
 el.style.top=y+'px';
 
-const obj={id:++idCounter,type,x,y,el};
+const obj={id:++id,type,x,y,el};
 
 if(type==='chair'){
 const c=document.createElement('div');
 c.className='chair';
-c.style.width=(opts.size||26)+'px';
-c.style.height=(opts.size||26)+'px';
-c.textContent=opts.label||'●';
+c.style.width='26px';
+c.style.height='26px';
+c.textContent='●';
 el.appendChild(c);
 }
 
 if(type==='label'){
-el.className='label elem';
+el.className='label-elem elem';
 el.textContent=opts.text||'label';
 }
 
 if(type==='rect'){
-el.classList.add('rect-elem');
+el.className='rect-elem elem';
 el.style.width=(opts.w||80)+'px';
 el.style.height=(opts.h||50)+'px';
 }
@@ -186,7 +173,7 @@ stage.appendChild(el);
 elements.push(obj);
 }
 
-/* ───── DRAG ───── */
+/* ── DRAG ── */
 function drag(o,e){
 if(tool!=='select')return;
 
@@ -197,8 +184,8 @@ const ox=o.x;
 const oy=o.y;
 
 function move(ev){
-o.x=ox+(ev.clientX-sx)/zoomLevel;
-o.y=oy+(ev.clientY-sy)/zoomLevel;
+o.x=ox+(ev.clientX-sx)/zoom;
+o.y=oy+(ev.clientY-sy)/zoom;
 o.el.style.left=o.x+'px';
 o.el.style.top=o.y+'px';
 }
@@ -212,19 +199,19 @@ document.addEventListener('mousemove',move);
 document.addEventListener('mouseup',up);
 }
 
-/* ───── STAGE CLICK ───── */
+/* ── STAGE CLICK ── */
 stage.addEventListener('mousedown',e=>{
 if(e.target!==stage)return;
 
 const r=stage.getBoundingClientRect();
-const x=(e.clientX-r.left)/zoomLevel;
-const y=(e.clientY-r.top)/zoomLevel;
+const x=(e.clientX-r.left)/zoom;
+const y=(e.clientY-r.top)/zoom;
 
 if(tool==='chair')add('chair',x,y);
-if(tool==='label')add('label',x,y);
+if(tool==='label')add('label',x,y,{text:'ラベル'});
 if(tool==='rect')add('rect',x,y);
 
-/* ───── ARC（既存維持）───── */
+/* ── ARC（そのまま維持） ── */
 if(tool==='arc'){
 arcPts.push({x,y});
 if(arcPts.length===3){
@@ -238,16 +225,25 @@ arcPts=[];
 }
 }
 
-/* ───── DIM（手入力化）───── */
+/* ── DIM（★ここだけ変更：手入力） ── */
 if(tool==='dim'){
 if(!dimStart){
 dimStart={x,y};
 }else{
 
-const value=prompt("寸法を入力（cm）","");
-if(value===null){dimStart=null;return;}
+let value=prompt("寸法を入力（cm）","");
+if(value===null){
+dimStart=null;
+return;
+}
 
-dims.push({
+if(value!=="" && isNaN(Number(value))){
+alert("数字を入力してください");
+dimStart=null;
+return;
+}
+
+dimLines.push({
 x1:dimStart.x,
 y1:dimStart.y,
 x2:x,
@@ -261,20 +257,19 @@ renderDim();
 }
 });
 
-/* ───── BEZIER ───── */
+/* ── BEZIER ── */
 function bez(p0,p1,p2,t){
-return {
+return{
 x:(1-t)*(1-t)*p0.x+2*(1-t)*t*p1.x+t*t*p2.x,
 y:(1-t)*(1-t)*p0.y+2*(1-t)*t*p1.y+t*t*p2.y
 };
 }
 
-/* ───── DIM RENDER ───── */
+/* ── DIM RENDER ── */
 function renderDim(){
 svg.innerHTML='';
 
-dims.forEach(d=>{
-
+dimLines.forEach(d=>{
 const line=document.createElementNS('http://www.w3.org/2000/svg','line');
 line.setAttribute('x1',d.x1);
 line.setAttribute('y1',d.y1);
@@ -295,17 +290,9 @@ svg.appendChild(text);
 });
 }
 
-/* ───── GROUP ───── */
-function groupSelected(){
-selected=null;
-}
-
-/* ───── PNG ───── */
+/* ── EXPORT ── */
 function exportPNG(){
-html2canvas(stage,{
-scale:2,
-backgroundColor:'#fff'
-}).then(c=>{
+html2canvas(stage,{scale:2}).then(c=>{
 const a=document.createElement('a');
 a.href=c.toDataURL('image/png');
 a.download='stage.png';
@@ -313,9 +300,39 @@ a.click();
 });
 }
 
-/* ───── INIT ───── */
-setStageSize(960,760);
-updateZoom();
+/* ── SAVE / LOAD ── */
+function saveTemplate(){
+const data={elements,dimLines,stageW,stageH};
+const a=document.createElement('a');
+a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+a.download='stage.json';
+a.click();
+}
+
+function loadTemplate(){
+const inp=document.createElement('input');
+inp.type='file';
+inp.onchange=e=>{
+const r=new FileReader();
+r.onload=ev=>{
+const d=JSON.parse(ev.target.result);
+dimLines=d.dimLines||[];
+renderDim();
+};
+r.readAsText(e.target.files[0]);
+};
+inp.click();
+}
+
+/* ── CLEAR ── */
+function clearAll(){
+elements.forEach(e=>e.el.remove());
+elements=[];
+dimLines=[];
+svg.innerHTML='';
+}
+
+/* ── INIT ── */
 renderDim();
 
 </script>
