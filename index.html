@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舞台配置図 v15.1</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:sans-serif;
+background:#d8d6cf;
+height:100vh;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+}
+
+#toolbar{
+display:flex;
+gap:6px;
+padding:6px;
+background:white;
+border-bottom:1px solid #ddd;
+flex-wrap:wrap;
+}
+
+button{
+font-size:11px;
+padding:4px 8px;
+border:1px solid #ccc;
+background:white;
+cursor:pointer;
+}
+
+#main{
+flex:1;
+display:flex;
+overflow:hidden;
+}
+
+#stageWrap{
+flex:1;
+position:relative;
+overflow:auto;
+}
+
+#stage{
+position:relative;
+background:white;
+width:1200px;
+height:800px;
+transform-origin:0 0;
+}
+
+.elem{
+position:absolute;
+user-select:none;
+cursor:move;
+}
+
+.chair{
+border-radius:50%;
+border:2px solid #333;
+background:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:10px;
+}
+
+.label{
+font-size:11px;
+background:white;
+border:1px solid #aaa;
+padding:2px 5px;
+}
+
+#svg{
+position:absolute;
+inset:0;
+pointer-events:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="toolbar">
+<button onclick="setTool('select')">選択</button>
+<button onclick="setTool('chair')">椅子</button>
+<button onclick="setTool('label')">ラベル</button>
+<button onclick="setTool('line')">線配置</button>
+<button onclick="setTool('dim')">寸法</button>
+<button onclick="groupSelected()">Group</button>
+<button onclick="exportPNG()">PNG</button>
+</div>
+
+<div id="main">
+<div id="stageWrap">
+<div id="stage">
+<svg id="svg"></svg>
+</div>
+</div>
+</div>
+
+<script>
+
+let tool='select';
+let elements=[];
+let selected=[];
+let zoom=1;
+
+let linePts=[];
+let lineCount=8;
+
+let dimStart=null;
+let dims=[];
+let groupId=1;
+
+const stage=document.getElementById('stage');
+const svg=document.getElementById('svg');
+
+/* ───── TOOL ───── */
+function setTool(t){
+tool=t;
+linePts=[];
+dimStart=null;
+}
+
+/* ───── ADD ───── */
+function add(type,x,y){
+const el=document.createElement('div');
+el.className='elem';
+el.style.left=x+'px';
+el.style.top=y+'px';
+
+const obj={type,x,y,el,group:null};
+
+if(type==='chair'){
+const c=document.createElement('div');
+c.className='chair';
+c.style.width='26px';
+c.style.height='26px';
+c.textContent='●';
+el.appendChild(c);
+}
+
+if(type==='label'){
+el.className='label elem';
+el.textContent='label';
+}
+
+el.onmousedown=e=>drag(obj,e);
+
+stage.appendChild(el);
+elements.push(obj);
+}
+
+/* ───── DRAG ───── */
+function drag(o,e){
+if(tool!=='select')return;
+
+const sx=e.clientX;
+const sy=e.clientY;
+
+const ox=o.x;
+const oy=o.y;
+
+function move(ev){
+o.x=ox+(ev.clientX-sx)/zoom;
+o.y=oy+(ev.clientY-sy)/zoom;
+o.el.style.left=o.x+'px';
+o.el.style.top=o.y+'px';
+}
+
+function up(){
+document.removeEventListener('mousemove',move);
+document.removeEventListener('mouseup',up);
+}
+
+document.addEventListener('mousemove',move);
+document.addEventListener('mouseup',up);
+}
+
+/* ───── STAGE CLICK ───── */
+stage.addEventListener('mousedown',e=>{
+if(e.target!==stage)return;
+
+const r=stage.getBoundingClientRect();
+const x=(e.clientX-r.left)/zoom;
+const y=(e.clientY-r.top)/zoom;
+
+/* 椅子 */
+if(tool==='chair')add('chair',x,y);
+
+/* ラベル */
+if(tool==='label')add('label',x,y);
+
+/* 線配置（等分） */
+if(tool==='line'){
+linePts.push({x,y});
+
+if(linePts.length===2){
+for(let i=0;i<lineCount;i++){
+const t=i/(lineCount-1);
+add('chair',
+linePts[0].x+(linePts[1].x-linePts[0].x)*t,
+linePts[0].y+(linePts[1].y-linePts[0].y)*t
+);
+}
+linePts=[];
+}
+}
+
+/* 寸法（手入力） */
+if(tool==='dim'){
+if(!dimStart){
+dimStart={x,y};
+}else{
+const value=prompt("寸法を入力（cm）","");
+if(value===null){dimStart=null;return;}
+
+dims.push({
+x1:dimStart.x,
+y1:dimStart.y,
+x2:x,
+y2:y,
+dist:value
+});
+
+dimStart=null;
+renderDim();
+}
+}
+});
+
+/* ───── DIM描画 ───── */
+function renderDim(){
+svg.innerHTML='';
+
+dims.forEach(d=>{
+const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+line.setAttribute('x1',d.x1);
+line.setAttribute('y1',d.y1);
+line.setAttribute('x2',d.x2);
+line.setAttribute('y2',d.y2);
+line.setAttribute('stroke','#1d9e75');
+line.setAttribute('stroke-dasharray','5,3');
+
+const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+text.setAttribute('x',(d.x1+d.x2)/2);
+text.setAttribute('y',(d.y1+d.y2)/2);
+text.setAttribute('font-size','10');
+text.setAttribute('fill','#1d9e75');
+text.textContent=d.dist+'cm';
+
+svg.appendChild(line);
+svg.appendChild(text);
+});
+}
+
+/* ───── GROUP ───── */
+function groupSelected(){
+selected.forEach(o=>o.group=groupId++);
+groupId++;
+}
+
+/* ───── PNG ───── */
+function exportPNG(){
+html2canvas(stage,{
+scale:2,
+backgroundColor:'#fff'
+}).then(canvas=>{
+const a=document.createElement('a');
+a.href=canvas.toDataURL('image/png');
+a.download='stage.png';
+a.click();
+});
+}
+
+/* 初期描画 */
+renderDim();
+
+</script>
+
+</body>
+</html>
