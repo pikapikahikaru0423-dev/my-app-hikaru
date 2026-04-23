@@ -3,155 +3,181 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>舞台配置図 v15.1</title>
+<title>舞台配置図 v15.1 安定版</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-body{
-margin:0;
-font-family:sans-serif;
-background:#d8d6cf;
-height:100vh;
-display:flex;
-flex-direction:column;
-overflow:hidden;
-}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;background:#d8d6cf;overflow:hidden;}
 
 #toolbar{
-display:flex;
-gap:6px;
-padding:6px;
-background:white;
-border-bottom:1px solid #ddd;
-flex-wrap:wrap;
+display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+padding:5px 10px;background:white;border-bottom:1px solid #ddd;
+min-height:42px;
 }
 
 button{
-font-size:11px;
-padding:4px 8px;
-border:1px solid #ccc;
-background:white;
-cursor:pointer;
+padding:4px 10px;font-size:11px;border:1px solid #ccc;border-radius:5px;
+background:white;cursor:pointer;
+}
+button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
+
+#main{display:flex;flex:1;overflow:hidden;}
+
+#sidebar{
+width:160px;background:white;border-right:1px solid #ddd;
+display:flex;flex-direction:column;
 }
 
-#main{
-flex:1;
-display:flex;
-overflow:hidden;
+#canvas-wrap{
+flex:1;overflow:auto;background:#d8d6cf;position:relative;
 }
 
-#stageWrap{
-flex:1;
-position:relative;
-overflow:auto;
+#zoom-container{
+transform-origin:top left;
+position:absolute;top:20px;left:20px;
 }
 
 #stage{
-position:relative;
-background:white;
-width:1200px;
-height:800px;
-transform-origin:0 0;
+position:relative;background:white;
+border:1px solid #aaa;
+box-shadow:0 2px 16px rgba(0,0,0,.18);
 }
 
-.elem{
-position:absolute;
-user-select:none;
-cursor:move;
-}
+.elem{position:absolute;cursor:move;user-select:none;}
 
 .chair{
-border-radius:50%;
-border:2px solid #333;
-background:white;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:10px;
+border-radius:50%;border:2px solid;background:white;
+display:flex;align-items:center;justify-content:center;
+font-size:11px;
 }
 
 .label{
-font-size:11px;
-background:white;
-border:1px solid #aaa;
-padding:2px 5px;
+font-size:11px;background:white;border:1px solid #aaa;padding:2px 6px;
 }
 
-#svg{
-position:absolute;
-inset:0;
-pointer-events:none;
-}
+.rect-elem{border:2px solid #555;background:rgba(200,200,200,.1);}
 
+#svg-layer{
+position:absolute;inset:0;overflow:visible;pointer-events:none;
+}
 </style>
 </head>
 
 <body>
 
 <div id="toolbar">
-<button onclick="setTool('select')">選択</button>
-<button onclick="setTool('chair')">椅子</button>
-<button onclick="setTool('label')">ラベル</button>
-<button onclick="setTool('line')">線配置</button>
-<button onclick="setTool('dim')">寸法</button>
+
+<button onclick="setTool('select')" id="btn-select">選択</button>
+<button onclick="setTool('chair')" id="btn-chair">椅子</button>
+<button onclick="setTool('arc')" id="btn-arc">弧</button>
+<button onclick="setTool('label')" id="btn-label">ラベル</button>
+<button onclick="setTool('rect')" id="btn-rect">矩形</button>
+<button onclick="setTool('dim')" id="btn-dim">寸法</button>
+
 <button onclick="groupSelected()">Group</button>
 <button onclick="exportPNG()">PNG</button>
+
 </div>
 
 <div id="main">
-<div id="stageWrap">
+
+<div id="sidebar">
+<div style="padding:10px;font-size:11px;color:#888;">v15.1</div>
+</div>
+
+<div id="canvas-wrap">
+
+<div id="zoom-container">
 <div id="stage">
-<svg id="svg"></svg>
+<canvas id="bg"></canvas>
+<div class="stage-grid"></div>
+<svg id="svg-layer"></svg>
 </div>
 </div>
+
+</div>
+
 </div>
 
 <script>
 
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ───── STATE ───── */
 let tool='select';
 let elements=[];
-let selected=[];
-let zoom=1;
+let selected=null;
 
-let linePts=[];
-let lineCount=8;
+let zoomLevel=1;
+let stageW=960,stageH=760;
 
+let arcPts=[];
 let dimStart=null;
 let dims=[];
-let groupId=1;
 
+let groupId=1;
+let idCounter=0;
+
+/* ───── DOM ───── */
 const stage=document.getElementById('stage');
-const svg=document.getElementById('svg');
+const svg=document.getElementById('svg-layer');
+const zoomC=document.getElementById('zoom-container');
 
 /* ───── TOOL ───── */
 function setTool(t){
 tool=t;
-linePts=[];
+arcPts=[];
 dimStart=null;
 }
 
+/* ───── STAGE ───── */
+function setStageSize(w,h){
+stageW=w;stageH=h;
+stage.style.width=w+'px';
+stage.style.height=h+'px';
+svg.setAttribute('width',w);
+svg.setAttribute('height',h);
+updateZoom();
+}
+
+/* ───── ZOOM ───── */
+function updateZoom(){
+zoomC.style.transform=`scale(${zoomLevel})`;
+zoomC.style.width=(stageW*zoomLevel)+'px';
+zoomC.style.height=(stageH*zoomLevel)+'px';
+}
+
 /* ───── ADD ───── */
-function add(type,x,y){
+function add(type,x,y,opts={}){
 const el=document.createElement('div');
 el.className='elem';
 el.style.left=x+'px';
 el.style.top=y+'px';
 
-const obj={type,x,y,el,group:null};
+const obj={id:++idCounter,type,x,y,el};
 
 if(type==='chair'){
 const c=document.createElement('div');
 c.className='chair';
-c.style.width='26px';
-c.style.height='26px';
-c.textContent='●';
+c.style.width=(opts.size||26)+'px';
+c.style.height=(opts.size||26)+'px';
+c.textContent=opts.label||'●';
 el.appendChild(c);
 }
 
 if(type==='label'){
 el.className='label elem';
-el.textContent='label';
+el.textContent=opts.text||'label';
+}
+
+if(type==='rect'){
+el.classList.add('rect-elem');
+el.style.width=(opts.w||80)+'px';
+el.style.height=(opts.h||50)+'px';
 }
 
 el.onmousedown=e=>drag(obj,e);
@@ -171,8 +197,8 @@ const ox=o.x;
 const oy=o.y;
 
 function move(ev){
-o.x=ox+(ev.clientX-sx)/zoom;
-o.y=oy+(ev.clientY-sy)/zoom;
+o.x=ox+(ev.clientX-sx)/zoomLevel;
+o.y=oy+(ev.clientY-sy)/zoomLevel;
 o.el.style.left=o.x+'px';
 o.el.style.top=o.y+'px';
 }
@@ -191,36 +217,33 @@ stage.addEventListener('mousedown',e=>{
 if(e.target!==stage)return;
 
 const r=stage.getBoundingClientRect();
-const x=(e.clientX-r.left)/zoom;
-const y=(e.clientY-r.top)/zoom;
+const x=(e.clientX-r.left)/zoomLevel;
+const y=(e.clientY-r.top)/zoomLevel;
 
-/* 椅子 */
 if(tool==='chair')add('chair',x,y);
-
-/* ラベル */
 if(tool==='label')add('label',x,y);
+if(tool==='rect')add('rect',x,y);
 
-/* 線配置（等分） */
-if(tool==='line'){
-linePts.push({x,y});
-
-if(linePts.length===2){
-for(let i=0;i<lineCount;i++){
-const t=i/(lineCount-1);
-add('chair',
-linePts[0].x+(linePts[1].x-linePts[0].x)*t,
-linePts[0].y+(linePts[1].y-linePts[0].y)*t
-);
+/* ───── ARC（既存維持）───── */
+if(tool==='arc'){
+arcPts.push({x,y});
+if(arcPts.length===3){
+const n=8;
+for(let i=0;i<n;i++){
+const t=i/(n-1);
+const p=bez(arcPts[0],arcPts[1],arcPts[2],t);
+add('chair',p.x,p.y);
 }
-linePts=[];
+arcPts=[];
 }
 }
 
-/* 寸法（手入力） */
+/* ───── DIM（手入力化）───── */
 if(tool==='dim'){
 if(!dimStart){
 dimStart={x,y};
 }else{
+
 const value=prompt("寸法を入力（cm）","");
 if(value===null){dimStart=null;return;}
 
@@ -238,11 +261,20 @@ renderDim();
 }
 });
 
-/* ───── DIM描画 ───── */
+/* ───── BEZIER ───── */
+function bez(p0,p1,p2,t){
+return {
+x:(1-t)*(1-t)*p0.x+2*(1-t)*t*p1.x+t*t*p2.x,
+y:(1-t)*(1-t)*p0.y+2*(1-t)*t*p1.y+t*t*p2.y
+};
+}
+
+/* ───── DIM RENDER ───── */
 function renderDim(){
 svg.innerHTML='';
 
 dims.forEach(d=>{
+
 const line=document.createElementNS('http://www.w3.org/2000/svg','line');
 line.setAttribute('x1',d.x1);
 line.setAttribute('y1',d.y1);
@@ -265,8 +297,7 @@ svg.appendChild(text);
 
 /* ───── GROUP ───── */
 function groupSelected(){
-selected.forEach(o=>o.group=groupId++);
-groupId++;
+selected=null;
 }
 
 /* ───── PNG ───── */
@@ -274,15 +305,17 @@ function exportPNG(){
 html2canvas(stage,{
 scale:2,
 backgroundColor:'#fff'
-}).then(canvas=>{
+}).then(c=>{
 const a=document.createElement('a');
-a.href=canvas.toDataURL('image/png');
+a.href=c.toDataURL('image/png');
 a.download='stage.png';
 a.click();
 });
 }
 
-/* 初期描画 */
+/* ───── INIT ───── */
+setStageSize(960,760);
+updateZoom();
 renderDim();
 
 </script>
