@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v17.1</title>
+<title>舞台配置図 Pro v17.3</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -26,72 +26,61 @@ button{
   transition:background .12s;
 }
 button:hover{background:#f0f0ee;}
-button:disabled{opacity:0.3;cursor:default;}
 button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
 
 input[type=range]{width:80px;}
 input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #ccc;border-radius:4px;}
 input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;cursor:pointer;}
 
-/* Main structure */
+/* Main */
 #main{display:flex;flex:1;overflow:hidden;}
-
-#sidebar{
-  width:160px;min-width:160px;background:white;border-right:1px solid #ddd;
-  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
-}
-.tabs{display:flex;border-bottom:1px solid #eee;flex-shrink:0;}
-.tab{flex:1;padding:10px 2px;text-align:center;border-bottom:2px solid transparent;cursor:pointer;font-size:11px;color:#888;}
-.tab.active{border-color:#1d9e75;color:#1d9e75;font-weight:600;}
+#sidebar{width:160px;background:white;border-right:1px solid #ddd;display:flex;flex-direction:column;flex-shrink:0;}
+.tabs{display:flex;border-bottom:1px solid #eee;}
+.tab{flex:1;padding:10px 2px;text-align:center;cursor:pointer;font-size:11px;color:#888;}
+.tab.active{border-bottom:2px solid #1d9e75;color:#1d9e75;font-weight:600;}
 .inst-list{flex:1;overflow-y:auto;}
 .inst{padding:8px 10px;font-size:12px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;align-items:center;gap:6px;}
-.inst.active{background:#e1f5ee;}
-.inst-dot{width:8px;height:8px;border-radius:50%;}
 
-#canvas-wrap{flex:1;overflow:auto;background:#d8d6cf;position:relative;}
+#canvas-wrap{flex:1;overflow:auto;position:relative;background:#d8d6cf;}
 #zoom-container{transform-origin:top left;position:absolute;top:20px;left:20px;}
-#stage{
-  position:relative;background:white;border:1px solid #aaa;
-  box-shadow:0 2px 16px rgba(0,0,0,.18);overflow:visible;touch-action:none;
-}
-.stage-grid{position:absolute;inset:0;pointer-events:none;z-index:2;
-  background-image:linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px);
-  background-size:30px 30px;}
+#stage{position:relative;background:white;border:1px solid #aaa;box-shadow:0 2px 16px rgba(0,0,0,.18);touch-action:none;}
+#bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;display:none;}
+.stage-grid{position:absolute;inset:0;pointer-events:none;z-index:2;background-image:linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px);background-size:30px 30px;}
 #svg-layer{position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:3;}
 
-/* Elements */
+/* Elem */
 .elem{position:absolute;cursor:move;user-select:none;touch-action:none;z-index:10;pointer-events:auto;}
-.chair{
-  border-radius:50%;border:2px solid;background:white;
-  display:flex;align-items:center;justify-content:center;
-  font-weight:600;position:relative;width:100%;height:100%;
-}
-.chair-text{position:absolute;white-space:nowrap;pointer-events:none;text-align:center;}
+.chair{border-radius:50%;border:2px solid;background:white;display:flex;align-items:center;justify-content:center;font-weight:600;width:100%;height:100%;}
+.chair-text{position:absolute;white-space:nowrap;pointer-events:none;}
 .elem.selected{outline:2px solid #1d9e75;outline-offset:4px;}
+.label-elem{background:white;border:1px solid #aaa;display:flex;align-items:center;justify-content:center;}
+.rect-elem{border:2px solid #555;background:rgba(200,200,200,0.1);display:flex;align-items:center;justify-content:center;}
+.dim-elem{pointer-events:auto;}
+.dim-line{position:absolute;height:2px;background:#1d9e75;transform-origin:0 50%;}
+.dim-text{position:absolute;color:#1d9e75;font-weight:bold;font-size:12px;white-space:nowrap;transform:translate(-50%,-120%);}
 
-.label-elem{font-size:14px;background:white;padding:4px 8px;border:1px solid #aaa;border-radius:3px;display:flex;align-items:center;justify-content:center;text-align:center;}
-.rect-elem{border:2px solid #555;background:rgba(200,200,200,0.1);display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center;overflow:hidden;}
-
-/* Group highlight */
-.elem.grouped-member{box-shadow: 0 0 0 1px #1d9e75;}
-
-/* Handle */
-.handle{
-  position:absolute;width:14px;height:14px;background:#1d9e75;
-  border:2px solid white;border-radius:50%;z-index:25;display:none;
-}
+/* Handles */
+.handle{position:absolute;width:12px;height:12px;background:#1d9e75;border:2px solid white;border-radius:50%;z-index:25;display:none;}
 .elem.selected .handle{display:block;}
-.nw{top:-7px;left:-7px;cursor:nwse-resize;}
-.ne{top:-7px;right:-7px;cursor:nesw-resize;}
-.sw{bottom:-7px;left:-7px;cursor:nesw-resize;}
-.se{bottom:-7px;right:-7px;cursor:nwse-resize;}
-.rot{top:-30px;left:calc(50% - 7px);cursor:crosshair;background:#ff9800;}
+.nw{top:-6px;left:-6px;cursor:nwse-resize;}
+.ne{top:-6px;right:-6px;cursor:nesw-resize;}
+.sw{bottom:-6px;left:-6px;cursor:nesw-resize;}
+.se{bottom:-6px;right:-6px;cursor:nwse-resize;}
+.rot{top:-25px;left:calc(50% - 6px);cursor:crosshair;background:#ff9800;}
+.elem.grouped-member{box-shadow: 0 0 0 1px rgba(29,158,117,0.5);}
 
-#props{
-  padding:5px 12px;border-top:1px solid #eee;background:white;
-  font-size:11px;color:#888;display:flex;align-items:center;gap:12px;
-  flex-wrap:wrap;min-height:40px;flex-shrink:0;
+/* Panels */
+#guide-panel{
+  position:fixed;top:55px;left:175px;background:white;border:1px solid #ccc;
+  border-radius:8px;padding:12px;box-shadow:0 4px 15px rgba(0,0,0,0.15);
+  display:none;z-index:1000;font-size:12px;min-width:160px;
 }
+.step{display:flex;align-items:center;gap:8px;margin:5px 0;opacity:0.3;}
+.step.active{opacity:1;color:#1d9e75;font-weight:bold;}
+.step-num{width:18px;height:18px;background:#eee;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;}
+.step.active .step-num{background:#1d9e75;color:white;}
+
+#props{padding:5px 12px;background:white;border-top:1px solid #eee;font-size:11px;display:flex;align-items:center;gap:10px;min-height:40px;}
 </style>
 </head>
 <body>
@@ -108,15 +97,16 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
-    <button id="undo-btn" onclick="undo()" title="Ctrl+Z">↩ 戻す</button>
-    <button id="redo-btn" onclick="redo()" title="Ctrl+Y">↪ 進む</button>
-    <button onclick="groupSelected()" id="group-btn">グループ</button>
-    <button onclick="ungroup()" id="ungroup-btn">解除</button>
+    <button id="undo-btn" onclick="undo()">↩ 戻す</button>
+    <button id="redo-btn" onclick="redo()">↪ 進む</button>
+    <button onclick="groupSelected()">グループ</button>
+    <button onclick="ungroup()">解除</button>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
     <button onclick="exportTemplate()">💾 保存</button>
     <button onclick="importTemplate()">📂 読込</button>
+    <button onclick="resetCanvas()" style="color:red;">⚠ 全消去</button>
     <button onclick="loadPDF()">📄 PDF</button>
     <button onclick="exportPNG()" style="background:#1d9e75;color:white;">📷 PNG</button>
   </div>
@@ -125,25 +115,29 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
 <div id="main">
   <div id="sidebar">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('main',this)">木管・金管</div>
-      <div class="tab" onclick="switchTab('other',this)">その他</div>
+      <div class="tab active" id="tab-main-btn" onclick="switchTab('main')">木・金</div>
+      <div class="tab" id="tab-other-btn" onclick="switchTab('other')">その他</div>
     </div>
-    <div id="tab-main" class="inst-list"></div>
-    <div id="tab-other" class="inst-list" style="display:none"></div>
+    <div id="list-main" class="inst-list"></div>
+    <div id="list-other" class="inst-list" style="display:none"></div>
   </div>
-
   <div id="canvas-wrap">
     <div id="zoom-container">
       <div id="stage" style="width:960px;height:700px;">
-        <canvas id="bg" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;"></canvas>
+        <canvas id="bg"></canvas>
         <div class="stage-grid"></div>
-        <svg id="svg-layer" style="position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:3;"></svg>
+        <svg id="svg-layer"></svg>
       </div>
     </div>
   </div>
 </div>
 
-<div id="props">要素を選択して編集</div>
+<div id="guide-panel">
+  <div id="guide-title" style="font-weight:bold;margin-bottom:8px;"></div>
+  <div id="guide-steps"></div>
+</div>
+
+<div id="props">要素を選択してください</div>
 
 <script>
 const MAIN_INST=[
@@ -159,71 +153,54 @@ const OTHER_INST=[
   {l:"CA.Cl",c:"#36a"},{l:"S.Sax",c:"#1a8"}
 ];
 
-let elements=[];
-let selectedList=[];
-let tool='select';
-let zoomLevel=1.0;
-let chairSize=26;
-let idCounter=0;
-let gCounter=0;
+let elements=[], selectedList=[], tool='select';
+let zoomLevel=1.0, chairSize=26, idCounter=0, gCounter=0;
 let currentInst=MAIN_INST[0];
-
-let draggingObjs=[], dragStartPt={x:0,y:0};
-let resizingObj=null, resizeHandle='', rotatingObj=null, startAng=0, startMouseAng=0;
-let arcPts=[], linePts=[], dimStart=null;
-let history=[], historyIndex=-1;
+let draggingObjs=[], resizingObj=null, resizeHandle='', rotatingObj=null, startAng=0, startMouseAng=0;
+let arcPts=[], linePts=[], dimPts=[], history=[], historyIndex=-1;
 
 const stage=document.getElementById('stage');
 const svg=document.getElementById('svg-layer');
-const zoomCont=document.getElementById('zoom-container');
 
 function init(){
-  buildList(MAIN_INST,'tab-main');
-  buildList(OTHER_INST,'tab-other');
-  setupEvents();
-  fitZoom();
-  saveHistory();
+  renderList(MAIN_INST,'list-main'); renderList(OTHER_INST,'list-other');
+  setupEvents(); saveHistory();
 }
 
-function buildList(list,id){
+function renderList(list,id){
   const container=document.getElementById(id);
   list.forEach(inst=>{
     const div=document.createElement('div');
     div.className='inst';
-    div.innerHTML=`<span class="inst-dot" style="background:${inst.c}"></span>${inst.l}`;
+    div.innerHTML=`<span style="width:10px;height:10px;background:${inst.c};border-radius:50%"></span>${inst.l}`;
     div.onclick=()=>{
-      document.querySelectorAll('.inst').forEach(el=>el.classList.remove('active'));
-      div.classList.add('active');
-      currentInst=inst;
+      currentInst=inst; 
+      document.querySelectorAll('.inst').forEach(e=>e.style.background='');
+      div.style.background='#e1f5ee';
       if(tool==='select') setTool('chair');
     };
     container.appendChild(div);
   });
 }
 
-function switchTab(t,el){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-main').style.display=t==='main'?'':'none';
-  document.getElementById('tab-other').style.display=t==='other'?'':'none';
+function switchTab(t){
+  document.getElementById('list-main').style.display=t==='main'?'block':'none';
+  document.getElementById('list-other').style.display=t==='other'?'block':'none';
+  document.getElementById('tab-main-btn').className='tab '+(t==='main'?'active':'');
+  document.getElementById('tab-other-btn').className='tab '+(t==='other'?'active':'');
 }
 
 function setTool(t){
-  tool=t;
+  tool=t; arcPts=[]; linePts=[]; dimPts=[]; clearSVG();
   document.querySelectorAll('button[id^=btn-]').forEach(b=>b.classList.remove('active'));
   document.getElementById('btn-'+t)?.classList.add('active');
-  clearSelection();
+  updateGuide();
 }
 
 function setupEvents(){
-  stage.addEventListener('pointerdown', onDown, {passive:false});
-  window.addEventListener('pointermove', onMove, {passive:false});
-  window.addEventListener('pointerup', onUp);
-  window.addEventListener('keydown', e => {
-    if(e.ctrlKey && e.key === 'z') undo();
-    if(e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) redo();
-    if(e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-  });
+  stage.addEventListener('pointerdown',onDown);
+  window.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
 }
 
 function getXY(e){
@@ -236,191 +213,204 @@ function onDown(e){
   if(e.target.classList.contains('handle')){
     const rec=elements.find(el=>el.dom===e.target.parentElement);
     if(e.target.classList.contains('rot')){
-      rotatingObj=rec;
-      const center={x:rec.x+rec.w/2, y:rec.y+rec.h/2};
-      startMouseAng=Math.atan2(pt.y-center.y, pt.x-center.x);
-      startAng=rec.angle || 0;
-    } else {
-      resizingObj=rec;
-      resizeHandle=e.target.dataset.pos;
-    }
+      rotatingObj=rec; const c={x:rec.x+rec.w/2, y:rec.y+rec.h/2};
+      startMouseAng=Math.atan2(pt.y-c.y, pt.x-c.x); startAng=rec.angle||0;
+    } else { resizingObj=rec; resizeHandle=e.target.dataset.pos; }
     e.stopPropagation(); return;
   }
-
-  const elemDiv=e.target.closest('.elem');
-  if(elemDiv){
-    const rec=elements.find(el=>el.id==elemDiv.dataset.id);
+  const ed=e.target.closest('.elem');
+  if(ed){
+    const rec=elements.find(el=>el.id==ed.dataset.id);
     if(tool==='select'){
-      if(e.shiftKey){
-        toggleSelect(rec);
-      } else {
-        if(!selectedList.includes(rec)) selectSingle(rec);
-      }
-      // グループ移動の準備
-      draggingObjs = [];
-      selectedList.forEach(obj => {
-        if(obj.gid){
-          elements.filter(el => el.gid === obj.gid).forEach(m => {
-            if(!draggingObjs.find(d => d.obj === m)) draggingObjs.push({obj: m, ox: pt.x-m.x, oy: pt.y-m.y});
-          });
-        } else {
-          draggingObjs.push({obj: obj, ox: pt.x-obj.x, oy: pt.y-obj.y});
-        }
-      });
+      if(e.shiftKey) toggleSelect(rec); else if(!selectedList.includes(rec)) selectSingle(rec);
+      draggingObjs=selectedList.flatMap(obj=>obj.gid?elements.filter(el=>el.gid===obj.gid):[obj])
+                    .map(o=>({obj:o, ox:pt.x-o.x, oy:pt.y-o.y}));
     }
     return;
   }
-
   if(tool==='select') clearSelection();
   else if(tool==='chair') addElem('chair',pt.x-chairSize/2,pt.y-chairSize/2);
   else if(tool==='label') addElem('label',pt.x-50,pt.y-15,{text:prompt('内容','')||'ラベル'});
   else if(tool==='rect') addElem('rect',pt.x-50,pt.y-30);
-  
-  if(tool!=='select') saveHistory();
+  else if(tool==='arc') handleArc(pt);
+  else if(tool==='line') handleLine(pt);
+  else if(tool==='dim') handleDim(pt);
 }
 
 function onMove(e){
   const pt=getXY(e);
-  if(draggingObjs.length>0){
-    draggingObjs.forEach(d=>{
-      d.obj.x=pt.x-d.ox; d.obj.y=pt.y-d.oy;
-      d.obj.dom.style.left=d.obj.x+'px'; d.obj.dom.style.top=d.obj.y+'px';
-    });
+  if(draggingObjs.length){
+    draggingObjs.forEach(d=>{ d.obj.x=pt.x-d.ox; d.obj.y=pt.y-d.oy; d.obj.dom.style.left=d.obj.x+'px'; d.obj.dom.style.top=d.obj.y+'px'; });
   }
   if(resizingObj){
-    const rec=resizingObj;
-    if(resizeHandle==='se'){ rec.w=Math.max(20,pt.x-rec.x); rec.h=Math.max(20,pt.y-rec.y); }
-    else if(resizeHandle==='sw'){ const oldR=rec.x+rec.w; rec.x=pt.x; rec.w=Math.max(20,oldR-pt.x); rec.h=Math.max(20,pt.y-rec.y); }
-    else if(resizeHandle==='ne'){ const oldB=rec.y+rec.h; rec.y=pt.y; rec.h=Math.max(20,oldB-pt.y); rec.w=Math.max(20,pt.x-rec.x); }
-    else if(resizeHandle==='nw'){ const oldR=rec.x+rec.w; const oldB=rec.y+rec.h; rec.x=pt.x; rec.y=pt.y; rec.w=Math.max(20,oldR-pt.x); rec.h=Math.max(20,oldB-pt.y); }
-    rec.dom.style.left=rec.x+'px'; rec.dom.style.top=rec.y+'px'; rec.dom.style.width=rec.w+'px'; rec.dom.style.height=rec.h+'px';
+    const r=resizingObj;
+    if(resizeHandle==='se'){ r.w=Math.max(20,pt.x-r.x); r.h=Math.max(20,pt.y-r.y); }
+    else if(resizeHandle==='nw'){ const or=r.x+r.w, ob=r.y+r.h; r.x=pt.x; r.y=pt.y; r.w=Math.max(20,or-pt.x); r.h=Math.max(20,ob-pt.y); }
+    r.dom.style.left=r.x+'px'; r.dom.style.top=r.y+'px'; r.dom.style.width=r.w+'px'; r.dom.style.height=r.h+'px';
   }
   if(rotatingObj){
-    const rec=rotatingObj;
-    const center={x:rec.x+rec.w/2, y:rec.y+rec.h/2};
-    rec.angle = startAng + (Math.atan2(pt.y-center.y, pt.x-center.x) - startMouseAng) * 180 / Math.PI;
-    rec.dom.style.transform = `rotate(${rec.angle}deg)`;
+    const r=rotatingObj, c={x:r.x+r.w/2, y:r.y+r.h/2};
+    r.angle=startAng+(Math.atan2(pt.y-c.y, pt.x-c.x)-startMouseAng)*180/Math.PI;
+    r.dom.style.transform=`rotate(${r.angle}deg)`;
   }
+  if(arcPts.length||linePts.length||dimPts.length) drawPreviews(pt);
 }
 
-function onUp(){ 
-  if(draggingObjs.length>0 || resizingObj || rotatingObj) saveHistory();
-  draggingObjs=[]; resizingObj=null; rotatingObj=null;
-}
-
-function selectSingle(rec){ clearSelection(); selectedList=[rec]; rec.dom.classList.add('selected'); updateProps(); }
-function toggleSelect(rec){
-  if(selectedList.includes(rec)){ selectedList=selectedList.filter(x=>x!==rec); rec.dom.classList.remove('selected'); }
-  else { selectedList.push(rec); rec.dom.classList.add('selected'); }
-  updateProps();
-}
-function clearSelection(){ selectedList.forEach(el=>el.dom.classList.remove('selected')); selectedList=[]; updateProps(); }
+function onUp(){ if(draggingObjs.length||resizingObj||rotatingObj) saveHistory(); draggingObjs=[]; resizingObj=null; rotatingObj=null; }
 
 function addElem(type,x,y,opts={}){
-  const id=opts.id || ++idCounter;
+  const id=opts.id||++idCounter;
   const div=document.createElement('div');
   div.className='elem'; div.dataset.id=id;
   div.style.left=x+'px'; div.style.top=y+'px';
-  const color=opts.color||(type==='rect'?'#555555':currentInst.c);
-  const w=opts.w || (type==='chair'?chairSize:100); 
-  const h=opts.h || (type==='chair'?chairSize:60);
-  const bw=opts.bw || 2;
+  const w=opts.w||(type==='chair'?chairSize:100), h=opts.h||(type==='chair'?chairSize:40);
   const ang=opts.angle||0;
-  const gid=opts.gid || null;
-
-  div.style.width=w+'px'; div.style.height=h+'px';
-  div.style.transform=`rotate(${ang}deg)`;
-  if(gid) div.classList.add('grouped-member');
-
+  div.style.width=w+'px'; div.style.height=h+'px'; div.style.transform=`rotate(${ang}deg)`;
+  
   if(type==='chair'){
-    div.innerHTML=`<div class="chair" style="border-color:${color};color:${color};"><div class="chair-text" style="font-size:${Math.max(7,w/3.2)}px">${opts.label||currentInst.l}</div></div>`;
+    const c=opts.color||currentInst.c, l=opts.label||currentInst.l;
+    div.innerHTML=`<div class="chair" style="border-color:${c};color:${c}"><div class="chair-text" style="font-size:${w/3}px">${l}</div></div>`;
+  } else if(type==='dim'){
+    div.className='elem dim-elem'; div.style.width='auto'; div.style.height='auto';
+    div.innerHTML=`<div class="dim-line" style="width:${w}px;transform:rotate(${ang}deg)"></div><div class="dim-text" style="left:${w/2}px">${opts.text}</div>`;
   } else {
-    div.className += (type==='label'?' label-elem':' rect-elem');
-    div.style.color=color; div.style.borderColor=color; div.style.borderWidth=bw+'px';
-    div.textContent=opts.text||'';
-    ['nw','ne','sw','se','rot'].forEach(pos=>{ 
-      const hdl=document.createElement('div'); hdl.className='handle '+pos; 
-      if(pos!=='rot') hdl.dataset.pos=pos; div.appendChild(hdl); 
-    });
+    div.className+=(type==='label'?' label-elem':' rect-elem');
+    div.style.borderColor=opts.color||'#555'; div.style.borderWidth=(opts.bw||2)+'px'; div.textContent=opts.text||'';
+    ['nw','ne','sw','se','rot'].forEach(p=>{ const h=document.createElement('div'); h.className='handle '+p; if(p!=='rot') h.dataset.pos=p; div.appendChild(h); });
   }
   stage.appendChild(div);
-  const rec={id,type,dom:div,x,y,color,w,h,bw,angle:ang,gid,label:opts.label||currentInst.l,text:opts.text||'',opacity:opts.opacity||1};
+  const rec={id,type,dom:div,x,y,w,h,angle:ang,color:opts.color||'#555',label:opts.label||'',text:opts.text||'',bw:opts.bw||2,gid:opts.gid||null};
   elements.push(rec); return rec;
 }
 
+function handleArc(pt){
+  arcPts.push(pt); updateGuide();
+  if(arcPts.length===3){
+    const n=prompt("椅子の数",4); if(n){
+      const [p1,p2,p3]=arcPts;
+      for(let i=0;i<n;i++){
+        const t=i/(n-1||1);
+        const x=Math.pow(1-t,2)*p1.x+2*(1-t)*t*p3.x+Math.pow(t,2)*p2.x;
+        const y=Math.pow(1-t,2)*p1.y+2*(1-t)*t*p3.y+Math.pow(t,2)*p2.y;
+        addElem('chair',x-chairSize/2,y-chairSize/2);
+      }
+      saveHistory();
+    }
+    arcPts=[]; clearSVG(); updateGuide();
+  }
+}
+
+function handleLine(pt){
+  linePts.push(pt); updateGuide();
+  if(linePts.length===2){
+    const n=prompt("椅子の数",4); if(n){
+      const [p1,p2]=linePts;
+      for(let i=0;i<n;i++){
+        const t=i/(n-1||1);
+        addElem('chair', p1.x+(p2.x-p1.x)*t-chairSize/2, p1.y+(p2.y-p1.y)*t-chairSize/2);
+      }
+      saveHistory();
+    }
+    linePts=[]; clearSVG(); updateGuide();
+  }
+}
+
+function handleDim(pt){
+  dimPts.push(pt); updateGuide();
+  if(dimPts.length===2){
+    const val=prompt("寸法値","10.0m");
+    if(val){
+      const [p1,p2]=dimPts; const dx=p2.x-p1.x, dy=p2.y-p1.y;
+      const len=Math.sqrt(dx*dx+dy*dy), ang=Math.atan2(dy,dx)*180/Math.PI;
+      addElem('dim',p1.x,p1.y,{w:len,angle:ang,text:val});
+      saveHistory();
+    }
+    dimPts=[]; clearSVG(); updateGuide();
+  }
+}
+
+function drawPreviews(pt){
+  clearSVG();
+  if(arcPts.length===1) drawLine(arcPts[0],pt);
+  if(arcPts.length===2) { const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',`M${arcPts[0].x},${arcPts[0].y} Q${pt.x},${pt.y} ${arcPts[1].x},${arcPts[1].y}`); p.setAttribute('stroke','#1d9e75'); p.setAttribute('fill','none'); svg.appendChild(p); }
+  if(linePts.length===1) drawLine(linePts[0],pt);
+  if(dimPts.length===1) drawLine(dimPts[0],pt);
+}
+function drawLine(p1,p2){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',p1.x);l.setAttribute('y1',p1.y);l.setAttribute('x2',p2.x);l.setAttribute('y2',p2.y);l.setAttribute('stroke','#1d9e75');svg.appendChild(l); }
+function clearSVG(){ svg.innerHTML=''; }
+
+function updateGuide(){
+  const g=document.getElementById('guide-panel');
+  if(!['arc','line','dim'].includes(tool)){ g.style.display='none'; return; }
+  g.style.display='block';
+  const title={arc:'⌒ 弧配置',line:'｜ 線配置',dim:'↔ 寸法'}[tool];
+  const steps={arc:['始点','終点','膨らみ'],line:['始点','終点'],dim:['始点','終点']}[tool];
+  const cur=[arcPts,linePts,dimPts].find(a=>a.length>0)?.length || 0;
+  document.getElementById('guide-title').textContent=title;
+  document.getElementById('guide-steps').innerHTML=steps.map((s,i)=>`<div class="step ${i===cur?'active':''}"><span class="step-num">${i+1}</span>${s}</div>`).join('');
+}
+
+function selectSingle(r){ clearSelection(); selectedList=[r]; r.dom.classList.add('selected'); updateProps(); }
+function toggleSelect(r){ if(selectedList.includes(r)) { r.dom.classList.remove('selected'); selectedList=selectedList.filter(x=>x!==r); } else { r.dom.classList.add('selected'); selectedList.push(r); } updateProps(); }
+function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selected')); selectedList=[]; updateProps(); }
+
 function updateProps(){
   const p=document.getElementById('props');
-  if(selectedList.length===0){ p.textContent='要素を選択して編集（Shift+クリックで複数選択）'; return; }
-  if(selectedList.length>1){ p.innerHTML=`${selectedList.length}個の要素を選択中 <button onclick="deleteSelected()" style="color:red">一括削除</button>`; return; }
-  
+  if(!selectedList.length){ p.textContent='要素を選択してください'; return; }
   const s=selectedList[0];
-  let h = '';
-  if(s.type==='rect' || s.type==='label'){
-    h += `色:<input type="color" value="${s.color}" onchange="updateSel('color',this.value)"> `;
-    h += `太さ:<input type="number" min="1" max="10" value="${s.bw}" onchange="updateSel('bw',+this.value)"> `;
+  let h=`<button onclick="deleteSelected()" style="color:red">削除</button> `;
+  if(s.type==='rect'||s.type==='label'){
+    h+=`色:<input type="color" value="${s.color}" oninput="updateSel('color',this.value)"> 太さ:<input type="number" value="${s.bw}" oninput="updateSel('bw',+this.value)"> `;
   }
-  h += `内容:<input type="text" value="${s.type==='chair'?s.label:s.text}" onchange="updateSel('${s.type==='chair'?'label':'text'}',this.value)"> `;
-  h += `<button onclick="deleteSelected()" style="color:red">削除</button>`;
+  h+=`内容:<input type="text" value="${s.type==='chair'?s.label:s.text}" oninput="updateSel('${s.type==='chair'?'label':'text'}',this.value)">`;
   p.innerHTML=h;
 }
+function updateSel(k,v){ selectedList.forEach(s=>{
+  s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v;} if(k==='bw')s.dom.style.borderWidth=v+'px';
+  if(k==='label')s.dom.querySelector('.chair-text').textContent=v; if(k==='text'){ if(s.type==='dim') s.dom.querySelector('.dim-text').textContent=v; else { const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=v; hs.forEach(h=>s.dom.appendChild(h)); } }
+}); saveHistory(); }
 
-function updateSel(key,val){
-  selectedList.forEach(s=>{
-    s[key]=val;
-    if(key==='color'){ s.dom.style.color=val; s.dom.style.borderColor=val; if(s.dom.querySelector('.chair')) s.dom.querySelector('.chair').style.borderColor=val; }
-    if(key==='bw') s.dom.style.borderWidth=val+'px';
-    if(key==='label') s.dom.querySelector('.chair-text').textContent=val;
-    if(key==='text'){ const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=val; hs.forEach(h=>s.dom.appendChild(h)); }
-  });
-  saveHistory();
+function groupSelected(){ if(selectedList.length<2)return; const gid=++gCounter; selectedList.forEach(s=>{s.gid=gid;s.dom.classList.add('grouped-member');}); saveHistory(); }
+function ungroup(){ selectedList.forEach(s=>{ if(s.gid){ const id=s.gid; elements.filter(e=>e.gid===id).forEach(e=>{e.gid=null;e.dom.classList.remove('grouped-member');}); } }); saveHistory(); }
+function deleteSelected(){ selectedList.forEach(s=>{s.dom.remove();elements=elements.filter(e=>e.id!==s.id);}); clearSelection(); saveHistory(); }
+function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); } }
+
+function saveHistory(){
+  const state=JSON.stringify({elements:elements.map(e=>({...e,dom:null}))});
+  history=history.slice(0,historyIndex+1); history.push(state);
+  if(history.length>30)history.shift(); else historyIndex++;
 }
-
-function groupSelected(){
-  if(selectedList.length < 2) return;
-  const gid = ++gCounter;
-  selectedList.forEach(s => {
-    s.gid = gid;
-    s.dom.classList.add('grouped-member');
-  });
-  saveHistory();
-}
-
-function ungroup(){
-  selectedList.forEach(s => {
-    if(s.gid){
-      const id = s.gid;
-      elements.filter(el => el.gid === id).forEach(m => {
-        m.gid = null;
-        m.dom.classList.remove('grouped-member');
-      });
-    }
-  });
-  saveHistory();
-}
-
-function deleteSelected(){
-  selectedList.forEach(s=>{ s.dom.remove(); elements=elements.filter(x=>x.id!==s.id); });
-  clearSelection(); saveHistory();
-}
-
 function undo(){ if(historyIndex>0){ historyIndex--; applyState(); } }
 function redo(){ if(historyIndex<history.length-1){ historyIndex++; applyState(); } }
 function applyState(){
-  const state=JSON.parse(history[historyIndex]);
-  elements.forEach(e=>e.dom.remove()); elements=[];
-  state.elements.forEach(en=>addElem(en.type, en.x, en.y, en));
-  clearSelection();
-}
-function saveHistory(){
-  const state={elements: elements.map(e=>({...e, dom:null}))};
-  history=history.slice(0, historyIndex+1); history.push(JSON.stringify(state));
-  if(history.length>30) history.shift(); else historyIndex++;
-  document.getElementById('undo-btn').disabled=historyIndex<=0;
-  document.getElementById('redo-btn').disabled=historyIndex>=history.length-1;
+  const state=JSON.parse(history[historyIndex]); elements.forEach(e=>e.dom.remove()); elements=[];
+  state.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection();
 }
 
-function fitZoom(){ zoomLevel=Math.min(1.0, (document.getElementById('canvas-wrap').clientWidth-40)/stage.offsetWidth); applyZoom(); }
-function applyZoom(){ zoomCont.style.transform=`scale(${zoomLevel})`; }
+function exportTemplate(){
+  const data=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download='stage_data.json'; a.click();
+}
+function importTemplate(){
+  const i=document.createElement('input'); i.type='file'; i.onchange=async e=>{
+    const data=JSON.parse(await e.target.files[0].text());
+    elements.forEach(el=>el.dom.remove()); elements=[];
+    data.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); saveHistory();
+  }; i.click();
+}
+
+async function loadPDF(){
+  const i=document.createElement('input'); i.type='file'; i.accept='.pdf';
+  i.onchange=async e=>{
+    const d=new Uint8Array(await e.target.files[0].arrayBuffer());
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await pdfjsLib.getDocument({data:d}).promise; const page=await pdf.getPage(1);
+    const vp=page.getViewport({scale:1.5}); const cv=document.getElementById('bg');
+    cv.width=vp.width; cv.height=vp.height; stage.style.width=vp.width+'px'; stage.style.height=vp.height+'px';
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; cv.style.display='block'; fitZoom();
+  }; i.click();
+}
+function fitZoom(){ zoomLevel=Math.min(1.0, (document.getElementById('canvas-wrap').clientWidth-40)/stage.offsetWidth); document.getElementById('zoom-container').style.transform=`scale(${zoomLevel})`; }
 function exportPNG(){ html2canvas(stage,{scale:2}).then(c=>{ const a=document.createElement('a'); a.download='stage.png'; a.href=c.toDataURL(); a.click(); }); }
 
 window.onload=init;
