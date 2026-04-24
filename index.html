@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v15.1</title>
+<title>舞台配置図 Pro v15.6 (Classic Arc Logic)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -71,9 +71,6 @@ input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #c
 .label-elem{font-size:11px;background:white;padding:2px 6px;border:1px solid #aaa;border-radius:3px;white-space:nowrap;}
 .rect-elem{border:2px solid #555;background:rgba(200,200,200,0.1);display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center;overflow:hidden;}
 
-/* Group highlight */
-.elem.grouped-member{box-shadow: 0 0 0 1px #1d9e75;}
-
 /* Resize Handles */
 .resize-handle{
   position:absolute;width:18px;height:18px;background:#1d9e75;
@@ -103,13 +100,6 @@ input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #c
   flex-wrap:wrap;min-height:40px;flex-shrink:0;
 }
 #props input{padding:4px;border:1px solid #ccc;border-radius:4px;}
-
-#zoom-badge{
-  position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,0.7);color:white;padding:5px 15px;border-radius:20px;
-  pointer-events:none;opacity:0;transition:opacity 0.3s;z-index:2000;
-}
-#zoom-badge.show{opacity:1;}
 </style>
 </head>
 <body>
@@ -170,14 +160,14 @@ input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #c
 <div id="props">選択ツールで要素をタップして編集</div>
 
 <div id="arc-panel">
-  <div style="font-weight:bold;margin-bottom:8px;">⌒ 弧配置</div>
+  <div style="font-weight:bold;margin-bottom:8px;">⌒ 弧配置 (v14形式)</div>
   <div class="panel-row">
     <label>椅子の数</label><input type="number" id="arcN" value="4" min="1">
   </div>
-  <div class="step"><span class="step-num">1</span>始点をタップ</div>
-  <div class="step"><span class="step-num">2</span>膨らみをタップ</div>
-  <div class="step"><span class="step-num">3</span>終点をタップで完了</div>
-  <button onclick="resetArc()" style="width:100%;margin-top:10px;padding:6px;background:#f5f5f5;">リセット</button>
+  <div class="step"><span class="step-num">1</span>始点</div>
+  <div class="step"><span class="step-num">2</span>終点</div>
+  <div class="step"><span class="step-num">3</span>膨らみ</div>
+  <button onclick="resetArc()" style="width:100%;margin-top:10px;padding:6px;background:#f5f5f5;border:1px solid #ccc;">リセット</button>
 </div>
 
 <div id="line-panel">
@@ -185,9 +175,9 @@ input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #c
   <div class="panel-row">
     <label>椅子の数</label><input type="number" id="lineN" value="4" min="1">
   </div>
-  <div class="step"><span class="step-num">1</span>始点をタップ</div>
-  <div class="step"><span class="step-num">2</span>終点をタップで完了</div>
-  <button onclick="resetLine()" style="width:100%;margin-top:10px;padding:6px;background:#f5f5f5;">リセット</button>
+  <div class="step"><span class="step-num">1</span>始点</div>
+  <div class="step"><span class="step-num">2</span>終点</div>
+  <button onclick="resetLine()" style="width:100%;margin-top:10px;padding:6px;background:#f5f5f5;border:1px solid #ccc;">リセット</button>
 </div>
 
 <script>
@@ -207,12 +197,12 @@ let currentInst=MAIN_INST[0];
 let dragging=null, dragStart={x:0,y:0};
 let resizing=null, resizeHandle='';
 let arcPts=[], linePts=[], dimStart=null;
+let isHandling = false;
 
 const stage=document.getElementById('stage');
 const svg=document.getElementById('svg-layer');
 const zoomCont=document.getElementById('zoom-container');
 
-// --- Init ---
 function init(){
   buildList(MAIN_INST,'tab-main');
   buildList(OTHER_INST,'tab-other');
@@ -255,25 +245,25 @@ function setTool(t){
   selectElem(null);
 }
 
-// --- Interaction ---
 function setupEvents(){
-  stage.addEventListener('mousedown',onDown);
-  stage.addEventListener('touchstart',onDown,{passive:false});
-  window.addEventListener('mousemove',onMove);
-  window.addEventListener('touchmove',onMove,{passive:false});
-  window.addEventListener('mouseup',onUp);
-  window.addEventListener('touchend',onUp);
+  stage.addEventListener('pointerdown', onDown, {passive:false});
+  window.addEventListener('pointermove', onMove, {passive:false});
+  window.addEventListener('pointerup', onUp);
 }
 
 function getXY(e){
   const r=stage.getBoundingClientRect();
-  const cx=e.touches ? e.touches[0].clientX : e.clientX;
-  const cy=e.touches ? e.touches[0].clientY : e.clientY;
-  return {x:(cx-r.left)/zoomLevel, y:(cy-r.top)/zoomLevel};
+  return {x:(e.clientX-r.left)/zoomLevel, y:(e.clientY-r.top)/zoomLevel};
 }
 
 function onDown(e){
+  if(isHandling) return;
+  isHandling = true;
+  setTimeout(() => { isHandling = false; }, 300);
+
+  if (e.cancelable) e.preventDefault();
   const pt=getXY(e);
+
   if(tool==='arc'){ handleArc(pt); return; }
   if(tool==='line'){ handleLine(pt); return; }
   if(tool==='dim'){ handleDim(pt); return; }
@@ -291,7 +281,6 @@ function onDown(e){
       selectElem(rec);
       dragging=rec;
       dragStart={x:pt.x-rec.x, y:pt.y-rec.y};
-      e.preventDefault();
     }
     return;
   }
@@ -329,48 +318,53 @@ function onMove(e){
 
 function onUp(){ dragging=null; resizing=null; }
 
-// --- Arc Logic (3pts -> 1 bezier -> n chairs) ---
+// --- v14 Logic: 1始点 -> 2終点 -> 3膨らみ ---
 function handleArc(pt){
   arcPts.push(pt);
   if(arcPts.length===3){
     const n=parseInt(document.getElementById('arcN').value)||4;
     const gid=++gCounter;
-    const [p0,p1,p2]=arcPts;
-    for(let i=0;i<n;i++){
+    // p0:始点, p1:終点, p2:制御点(膨らみ)
+    const [p0, p1, p2]=arcPts;
+    for(let i=0; i<n; i++){
       const t=(n===1)?0.5:i/(n-1);
-      const x=Math.pow(1-t,2)*p0.x + 2*(1-t)*t*p1.x + Math.pow(t,2)*p2.x;
-      const y=Math.pow(1-t,2)*p0.y + 2*(1-t)*t*p1.y + Math.pow(t,2)*p2.y;
+      // 2次ベジェ曲線 (p0 -> p2(制御点) -> p1)
+      const x=Math.pow(1-t,2)*p0.x + 2*(1-t)*t*p2.x + Math.pow(t,2)*p1.x;
+      const y=Math.pow(1-t,2)*p0.y + 2*(1-t)*t*p2.y + Math.pow(t,2)*p1.y;
       addElem('chair',x-chairSize/2,y-chairSize/2,{groupId:gid});
     }
     resetArc();
   }
 }
+
 function drawArcPreview(pt){
   clearSVG('arc-pre');
-  if(arcPts.length===1) drawLine(arcPts[0],pt,'arc-pre',true);
-  else if(arcPts.length===2){
-    const p0=arcPts[0], p1=arcPts[1], p2=pt;
+  if(arcPts.length===1){
+    drawLine(arcPts[0],pt,'arc-pre',true); // 始点から現在地(終点候補)への直線
+  } else if(arcPts.length===2){
+    const p0=arcPts[0], p1=arcPts[1], p2=pt; // p2が現在のマウス位置(制御点)
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d',`M ${p0.x} ${p0.y} Q ${p1.x} ${p1.y} ${p2.x} ${p2.y}`);
+    path.setAttribute('d',`M ${p0.x} ${p0.y} Q ${p2.x} ${p2.y} ${p1.x} ${p1.y}`);
     path.setAttribute('stroke','#1d9e75'); path.setAttribute('fill','none');
     path.setAttribute('stroke-dasharray','5,5'); path.classList.add('arc-pre');
     svg.appendChild(path);
-    // dots preview
+    
+    // ガイド椅子の表示
     const n=parseInt(document.getElementById('arcN').value)||4;
-    for(let i=0;i<n;i++){
+    for(let i=0; i<n; i++){
       const t=(n===1)?0.5:i/(n-1);
-      const x=Math.pow(1-t,2)*p0.x + 2*(1-t)*t*p1.x + Math.pow(t,2)*p2.x;
-      const y=Math.pow(1-t,2)*p0.y + 2*(1-t)*t*p1.y + Math.pow(t,2)*p2.y;
+      const x=Math.pow(1-t,2)*p0.x + 2*(1-t)*t*p2.x + Math.pow(t,2)*p1.x;
+      const y=Math.pow(1-t,2)*p0.y + 2*(1-t)*t*p2.y + Math.pow(t,2)*p1.y;
       const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',chairSize/2);
-      c.setAttribute('fill','none'); c.setAttribute('stroke','#1d9e75'); c.classList.add('arc-pre');
+      c.setAttribute('fill','none'); c.setAttribute('stroke','rgba(29, 158, 117, 0.4)'); c.classList.add('arc-pre');
       svg.appendChild(c);
     }
   }
 }
+
 function resetArc(){ arcPts=[]; clearSVG('arc-pre'); }
 
-// --- Line Logic ---
 function handleLine(pt){
   linePts.push(pt);
   if(linePts.length===2){
@@ -387,11 +381,10 @@ function handleLine(pt){
 }
 function drawLinePreview(pt){
   clearSVG('line-pre');
-  drawLine(linePts[0],pt,'line-pre',true);
+  if(linePts[0]) drawLine(linePts[0],pt,'line-pre',true);
 }
 function resetLine(){ linePts=[]; clearSVG('line-pre'); }
 
-// --- Dimension Logic ---
 function handleDim(pt){
   if(!dimStart) dimStart=pt;
   else {
@@ -409,7 +402,6 @@ function handleDim(pt){
   }
 }
 
-// --- Elements ---
 function addElem(type,x,y,opts={}){
   const id=++idCounter;
   const div=document.createElement('div');
@@ -469,7 +461,6 @@ function deleteSel(){
   selectElem(null);
 }
 
-// --- Utils ---
 function zoom(v){ zoomLevel=Math.max(0.2,Math.min(3,zoomLevel+v)); applyZoom(); }
 function fitZoom(){ const w=document.getElementById('canvas-wrap').clientWidth-40; zoomLevel=Math.min(1.0, w/stage.offsetWidth); applyZoom(); }
 function applyZoom(){ zoomCont.style.transform=`scale(${zoomLevel})`; document.getElementById('zoom-pct').textContent=Math.round(zoomLevel*100)+'%'; }
@@ -482,7 +473,6 @@ function drawLine(p1,p2,cls,dash=false){
   l.classList.add(cls); svg.appendChild(l);
 }
 
-// --- PDF & Export ---
 async function loadPDF(){
   const input=document.createElement('input'); input.type='file'; input.accept='.pdf';
   input.onchange=async e=>{
@@ -490,7 +480,7 @@ async function loadPDF(){
     const data=new Uint8Array(await f.arrayBuffer());
     const pdf=await pdfjsLib.getDocument({data}).promise;
     const page=await pdf.getPage(1);
-    const vp=page.getViewport({scale:1.2}); // iPadで見やすいサイズ
+    const vp=page.getViewport({scale:1.2}); 
     const cv=document.getElementById('bg');
     cv.width=vp.width; cv.height=vp.height;
     stage.style.width=vp.width+'px'; stage.style.height=vp.height+'px';
@@ -504,7 +494,7 @@ async function loadPDF(){
 function removeBG(){ document.getElementById('bg').style.display='none'; }
 
 async function exportPNG(){
-  const oldZ=zoomLevel; zoomLevel=1.0; applyZoom(); // 等倍でキャプチャ
+  const oldZ=zoomLevel; zoomLevel=1.0; applyZoom();
   const canvas=await html2canvas(stage,{backgroundColor:null, scale:2, useCORS:true});
   const link=document.createElement('a'); link.download='舞台配置図.png'; link.href=canvas.toDataURL(); link.click();
   zoomLevel=oldZ; applyZoom();
