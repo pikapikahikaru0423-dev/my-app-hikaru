@@ -3,59 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>舞台配置図 v15</title>
+<title>舞台配置図 v14.5</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP";background:#d8d6cf;overflow:hidden}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  display:flex;flex-direction:column;height:100vh;
+  font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;
+  background:#d8d6cf;overflow:hidden;touch-action:none;
+}
 
-/* toolbar */
-#toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:6px;background:#fff;border-bottom:1px solid #ddd}
-button{font-size:12px;padding:5px 10px}
-button.active{background:#dff5ee}
+/* ── Toolbar ── */
+#toolbar{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:5px 10px;background:white;border-bottom:1px solid #ddd;
+  min-height:42px;
+}
+button{
+  padding:4px 10px;font-size:11px;border:1px solid #ccc;
+  border-radius:5px;background:white;cursor:pointer;
+}
+button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
 
-/* stage */
-#wrap{position:relative;flex:1;overflow:auto;height:calc(100vh - 50px)}
-#zoom{position:absolute;transform-origin:0 0}
-#stage{position:relative;background:white}
-#bg{position:absolute;inset:0;pointer-events:none}
-#svg{position:absolute;inset:0;pointer-events:none}
+.tb-sep{width:1px;height:22px;background:#ddd;}
 
-/* elements */
-.elem{position:absolute;user-select:none;cursor:move}
-.chair{border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center}
-.chair span{font-size:10px}
-.rect{border:2px solid #555;background:rgba(0,0,0,0.03)}
-.label{padding:2px 6px;border:1px solid #999;background:#fff;font-size:11px}
+/* ── Layout ── */
+#main{display:flex;flex:1;overflow:hidden;}
 
-/* select */
-.sel{outline:2px solid #1d9e75}
+#sidebar{
+  width:160px;background:white;border-right:1px solid #ddd;
+  display:flex;flex-direction:column;
+}
 
-/* arc preview */
-.preview{stroke:#1d9e75;stroke-dasharray:4 3}
+#canvas-wrap{
+  flex:1;overflow:auto;background:#d8d6cf;position:relative;
+}
+
+#zoom-container{
+  transform-origin:top left;
+  position:absolute;top:20px;left:20px;
+}
+
+/* ── Stage ── */
+#stage{
+  position:relative;background:white;
+  border:1px solid #aaa;
+  box-shadow:0 2px 16px rgba(0,0,0,.18);
+  overflow:hidden;
+}
+
+#bg{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;opacity:.5;display:none;
+}
+
+.stage-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(#00000010 1px,transparent 1px),
+  linear-gradient(90deg,#00000010 1px,transparent 1px);
+  background-size:30px 30px;
+}
+
+#svg-layer{position:absolute;inset:0;pointer-events:none;}
+
+/* ── Elements ── */
+.elem{position:absolute;user-select:none;touch-action:none;}
+.chair{
+  border-radius:50%;border:2px solid;background:white;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;
+}
+.chair-text{pointer-events:none;}
+
+.label-elem{
+  font-size:11px;background:white;padding:2px 6px;
+  border:1px solid #aaa;border-radius:3px;
+}
+
+.rect-elem{
+  border:2px solid #555;background:rgba(200,200,200,.1);
+}
+
+/* resize handles */
+.handle{
+  position:absolute;width:12px;height:12px;
+  background:#1d9e75;border-radius:50%;
+  display:none;
+}
+.elem.selected .handle{display:block;}
+.handle.nw{top:-6px;left:-6px;cursor:nwse-resize;}
+.handle.ne{top:-6px;right:-6px;}
+.handle.sw{bottom:-6px;left:-6px;}
+.handle.se{bottom:-6px;right:-6px;}
+
+/* group */
+.grouped{outline:1px dashed #888;}
+.selected{outline:2px solid #1d9e75;}
 </style>
 </head>
 
 <body>
 
 <div id="toolbar">
-<button onclick="setTool('select')" id="t-select">選択</button>
-<button onclick="setTool('chair')">椅子</button>
-<button onclick="setTool('arc')" id="t-arc">弧</button>
-<button onclick="setTool('line')" id="t-line">棒</button>
-<button onclick="setTool('rect')">矩形</button>
-<button onclick="setTool('label')">ラベル</button>
-<button onclick="exportPNG()">PNG</button>
+  <button id="btn-select" class="active" onclick="setTool('select')">選択</button>
+  <button onclick="setTool('chair')">椅子</button>
+  <button onclick="setTool('arc')">弧</button>
+  <button onclick="setTool('line')">棒</button>
+  <button onclick="setTool('rect')">矩形</button>
+  <button onclick="exportPNG()">PNG</button>
 </div>
 
-<div id="wrap">
-<div id="zoom">
-<div id="stage" style="width:1000px;height:700px;">
+<div id="main">
+<div id="sidebar"></div>
+
+<div id="canvas-wrap">
+<div id="zoom-container">
+<div id="stage">
 <canvas id="bg"></canvas>
-<svg id="svg"></svg>
+<div class="stage-grid"></div>
+<svg id="svg-layer"></svg>
+</div>
 </div>
 </div>
 </div>
@@ -64,224 +134,177 @@ button.active{background:#dff5ee}
 pdfjsLib.GlobalWorkerOptions.workerSrc =
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-/* ===== STATE ===== */
+/* ───────────────────────── State ───────────────────────── */
 let tool="select";
 let elements=[];
+let selected=null;
 let id=0;
-let selected=new Set();
 
-/* arc/line */
-let arcPts=[];
-let linePts=[];
-let arcStep=0;
-let lineStep=0;
+let stageW=960,stageH=760;
+let zoom=1;
 
-/* ===== DOM ===== */
+let arc=[],line=[];
+let arcState=0,lineState=0;
+
 const stage=document.getElementById("stage");
-const svg=document.getElementById("svg");
-const zoom=document.getElementById("zoom");
+const zoomC=document.getElementById("zoom-container");
+const svg=document.getElementById("svg-layer");
 
-/* ===== TOOL ===== */
+/* ───────────────────────── Init ───────────────────────── */
+stage.style.width=stageW+"px";
+stage.style.height=stageH+"px";
+
+/* ───────────────────────── Tool ───────────────────────── */
 function setTool(t){
-tool=t;
-document.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
-const btn=document.getElementById("t-"+t);
-if(btn)btn.classList.add("active");
-arcPts=[];linePts=[];arcStep=0;lineStep=0;
-clearSVG();
+  tool=t;
+  document.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
+  event.target.classList.add("active");
+  arc=[];line=[];arcState=0;lineState=0;
 }
 
-/* ===== ADD ELEMENT ===== */
+/* ───────────────────────── Add Element ───────────────────────── */
 function add(type,x,y,opt={}){
-const el=document.createElement("div");
-el.className="elem";
-el.style.left=x+"px";
-el.style.top=y+"px";
+  const el=document.createElement("div");
+  el.className="elem";
+  el.style.left=x+"px";
+  el.style.top=y+"px";
+  el.dataset.id=++id;
 
-const obj={id:++id,type,x,y,el};
+  const c={
+    chair(){
+      const size=opt.size||26;
+      el.style.width=size+"px";
+      el.style.height=size+"px";
 
-if(type==="chair"){
-el.classList.add("chair");
-el.style.width="26px";
-el.style.height="26px";
-el.innerHTML=`<span>${opt.label||"A"}</span>`;
-obj.label=opt.label;
+      const d=document.createElement("div");
+      d.className="chair";
+      d.style.width=size+"px";
+      d.style.height=size+"px";
+      d.style.borderColor=opt.color||"#333";
+      d.innerText=opt.label||"Inst";
+      el.appendChild(d);
+    },
+    rect(){
+      el.classList.add("rect-elem");
+      el.style.width=(opt.w||100)+"px";
+      el.style.height=(opt.h||60)+"px";
+
+      ["nw","ne","sw","se"].forEach(p=>{
+        const h=document.createElement("div");
+        h.className="handle "+p;
+        el.appendChild(h);
+      });
+    },
+    label(){
+      el.classList.add("label-elem");
+      el.innerText=opt.text||"label";
+    }
+  };
+
+  c[type]();
+
+  el.onmousedown=(e)=>{
+    if(tool!=="select")return;
+    select(el);
+    drag(el,e);
+  };
+
+  stage.appendChild(el);
+  elements.push({el,type,x,y,opt});
 }
 
-if(type==="rect"){
-el.classList.add("rect");
-el.style.width="100px";
-el.style.height="60px";
+/* ───────────────────────── Select ───────────────────────── */
+function select(el){
+  document.querySelectorAll(".elem").forEach(e=>e.classList.remove("selected"));
+  el.classList.add("selected");
+  selected=el;
 }
 
-if(type==="label"){
-el.classList.add("label");
-el.textContent="label";
+/* ───────────────────────── Drag ───────────────────────── */
+function drag(el,e){
+  const rect=stage.getBoundingClientRect();
+  const ox=e.clientX-rect.left-el.offsetLeft;
+  const oy=e.clientY-rect.top-el.offsetTop;
+
+  function mv(ev){
+    el.style.left=(ev.clientX-rect.left-ox)+"px";
+    el.style.top=(ev.clientY-rect.top-oy)+"px";
+  }
+
+  document.onmousemove=mv;
+  document.onmouseup=()=>document.onmousemove=null;
 }
 
-el.onclick=(e)=>{
-e.stopPropagation();
-if(tool==="select"){
-if(e.shiftKey){
-selected.has(obj.id)?selected.delete(obj.id):selected.add(obj.id);
-}else{
-selected.clear();
-selected.add(obj.id);
-}
-renderSelect();
-}
-};
+/* ───────────────────────── Stage click ───────────────────────── */
+stage.addEventListener("mousedown",e=>{
+  if(e.target!==stage)return;
 
-stage.appendChild(el);
-obj.el=el;
-elements.push(obj);
-}
+  const r=stage.getBoundingClientRect();
+  const x=(e.clientX-r.left)/zoom;
+  const y=(e.clientY-r.top)/zoom;
 
-/* ===== SELECT ===== */
-function renderSelect(){
-elements.forEach(e=>e.el.classList.remove("sel"));
-elements.filter(e=>selected.has(e.id)).forEach(e=>{
-e.el.classList.add("sel");
+  if(tool==="chair") add("chair",x,y);
+  if(tool==="rect") add("rect",x,y);
+  if(tool==="label") add("label",x,y,{text:"text"});
+  if(tool==="arc") arcTool(x,y);
+  if(tool==="line") lineTool(x,y);
 });
+
+/* ───────────────────────── Arc ───────────────────────── */
+function arcTool(x,y){
+  arc.push({x,y});
+  arcState++;
+
+  if(arcState===3){
+    const n=4;
+    for(let i=0;i<n;i++){
+      add("chair",arc[0].x+i*20,arc[0].y+i*10);
+    }
+    arc=[];arcState=0;
+  }
 }
 
-/* ===== STAGE CLICK ===== */
-stage.onclick=(e)=>{
-if(tool==="select")return;
+/* ───────────────────────── Line ───────────────────────── */
+function lineTool(x,y){
+  line.push({x,y});
+  lineState++;
 
-const r=stage.getBoundingClientRect();
-const x=e.clientX-r.left;
-const y=e.clientY-r.top;
-
-if(tool==="chair")add("chair",x,y,{label:"Inst"});
-if(tool==="rect")add("rect",x,y);
-if(tool==="label")add("label",x,y);
-
-/* arc */
-if(tool==="arc"){
-arcPts.push({x,y});
-if(arcPts.length===2){
-makeArc();
-arcPts=[];
-}
+  if(lineState===2){
+    const n=4;
+    for(let i=0;i<n;i++){
+      add("chair",line[0].x+i*20,line[0].y);
+    }
+    line=[];lineState=0;
+  }
 }
 
-/* line */
-if(tool==="line"){
-linePts.push({x,y});
-if(linePts.length===2){
-makeLine();
-linePts=[];
-}
-}
-};
-
-/* ===== ARC (v15修正版：自動カーブ) ===== */
-function makeArc(){
-const n=4;
-const p0=arcPts[0];
-const p2=arcPts[1];
-const mid={
-x:(p0.x+p2.x)/2,
-y:(p0.y+p2.y)/2-70
-};
-
-for(let i=0;i<n;i++){
-const t=i/(n-1);
-const x=(1-t)*(1-t)*p0.x+2*(1-t)*t*mid.x+t*t*p2.x;
-const y=(1-t)*(1-t)*p0.y+2*(1-t)*t*mid.y+t*t*p2.y;
-add("chair",x,y,{label:"Arc"});
-}
-drawLine(p0,mid,p2);
-}
-
-/* ===== LINE ===== */
-function makeLine(){
-const n=4;
-const a=linePts[0],b=linePts[1];
-
-for(let i=0;i<n;i++){
-const t=i/(n-1);
-add("chair",
-a.x+(b.x-a.x)*t,
-a.y+(b.y-a.y)*t,
-{label:"Line"});
-}
-drawStraight(a,b);
-}
-
-/* ===== SVG ===== */
-function drawLine(a,b,c){
-clearSVG();
-if(c){
-const p=document.createElementNS("http://www.w3.org/2000/svg","path");
-p.setAttribute("d",`M${a.x},${a.y} Q${b.x},${b.y} ${c.x},${c.y}`);
-p.setAttribute("class","preview");
-svg.appendChild(p);
-}else{
-const l=document.createElementNS("http://www.w3.org/2000/svg","line");
-l.setAttribute("x1",a.x);
-l.setAttribute("y1",a.y);
-l.setAttribute("x2",b.x);
-l.setAttribute("y2",b.y);
-l.setAttribute("class","preview");
-svg.appendChild(l);
-}
-}
-function drawStraight(a,b){
-clearSVG();
-const l=document.createElementNS("http://www.w3.org/2000/svg","line");
-l.setAttribute("x1",a.x);
-l.setAttribute("y1",a.y);
-l.setAttribute("x2",b.x);
-l.setAttribute("y2",b.y);
-l.setAttribute("class","preview");
-svg.appendChild(l);
-}
-function clearSVG(){svg.innerHTML="";}
-
-/* ===== PNG（修正版：背景保持） ===== */
+/* ───────────────────────── PNG EXPORT FIX ───────────────────────── */
 function exportPNG(){
-html2canvas(stage,{
-scale:2,
-backgroundColor:"#fff",
-useCORS:true
-}).then(canvas=>{
-const a=document.createElement("a");
-a.download="stage_v15.png";
-a.href=canvas.toDataURL();
-a.click();
-});
+  const target=document.getElementById("zoom-container");
+
+  html2canvas(target,{
+    scale:3,
+    useCORS:true,
+    backgroundColor:"#fff",
+    scrollX:0,
+    scrollY:0
+  }).then(canvas=>{
+    const a=document.createElement("a");
+    a.download="stage_v15.png";
+    a.href=canvas.toDataURL("image/png");
+    a.click();
+  });
 }
 
-/* ===== PDF ===== */
-function loadPDF(){
-const i=document.createElement("input");
-i.type="file";
-i.accept=".pdf";
-i.onchange=e=>{
-const f=new FileReader();
-f.onload=ev=>{
-pdfjsLib.getDocument({data:new Uint8Array(ev.target.result)}).promise.then(pdf=>{
-pdf.getPage(1).then(page=>{
-const vp=page.getViewport({scale:1.5});
-const c=document.getElementById("bg");
-c.width=vp.width;
-c.height=vp.height;
-stage.style.width=vp.width+"px";
-stage.style.height=vp.height+"px";
-page.render({canvasContext:c.getContext("2d"),viewport:vp});
-});
-});
-};
-f.readAsArrayBuffer(e.target.files[0]);
-};
-i.click();
-}
+/* ───────────────────────── Zoom ───────────────────────── */
+document.getElementById("canvas-wrap").addEventListener("wheel",e=>{
+  if(!e.ctrlKey)return;
+  e.preventDefault();
+  zoom+=e.deltaY<0?0.1:-0.1;
+  zoom=Math.max(0.2,Math.min(3,zoom));
+  zoomC.style.transform=`scale(${zoom})`;
+},{passive:false});
 
-/* ===== INIT ===== */
-setTool("select");
 </script>
-
 </body>
 </html>
