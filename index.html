@@ -522,7 +522,7 @@ function setChairSize(v){
 }
 
 // --- PDF & Export ---
-async function loadPDF(){
+  async function loadPDF(){
   const fileInput=document.createElement('input');
   fileInput.type='file'; fileInput.accept='.pdf';
   fileInput.onchange=async e=>{
@@ -540,6 +540,7 @@ async function loadPDF(){
   };
   fileInput.click();
 }
+
 
 function removeBG(){
   const cv=document.getElementById('bg');
