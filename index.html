@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v17.3</title>
+<title>舞台配置図 Pro v17.4</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -18,7 +18,6 @@ body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'
 }
 .tb-group{display:flex;align-items:center;gap:4px;}
 .tb-sep{width:1px;height:22px;background:#e0e0e0;margin:0 2px;}
-.tb-label{font-size:10px;color:#999;white-space:nowrap;}
 
 button{
   padding:6px 12px;font-size:11px;border:1px solid #ccc;border-radius:5px;
@@ -27,8 +26,8 @@ button{
 }
 button:hover{background:#f0f0ee;}
 button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
+button:disabled{opacity:0.3;cursor:default;}
 
-input[type=range]{width:80px;}
 input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #ccc;border-radius:4px;}
 input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;cursor:pointer;}
 
@@ -48,12 +47,12 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
 .stage-grid{position:absolute;inset:0;pointer-events:none;z-index:2;background-image:linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px);background-size:30px 30px;}
 #svg-layer{position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:3;}
 
-/* Elem */
+/* Elements */
 .elem{position:absolute;cursor:move;user-select:none;touch-action:none;z-index:10;pointer-events:auto;}
 .chair{border-radius:50%;border:2px solid;background:white;display:flex;align-items:center;justify-content:center;font-weight:600;width:100%;height:100%;}
 .chair-text{position:absolute;white-space:nowrap;pointer-events:none;}
 .elem.selected{outline:2px solid #1d9e75;outline-offset:4px;}
-.label-elem{background:white;border:1px solid #aaa;display:flex;align-items:center;justify-content:center;}
+.label-elem{background:white;border:1px solid #aaa;border-radius:3px;display:flex;align-items:center;justify-content:center;}
 .rect-elem{border:2px solid #555;background:rgba(200,200,200,0.1);display:flex;align-items:center;justify-content:center;}
 .dim-elem{pointer-events:auto;}
 .dim-line{position:absolute;height:2px;background:#1d9e75;transform-origin:0 50%;}
@@ -80,7 +79,7 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
 .step-num{width:18px;height:18px;background:#eee;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;}
 .step.active .step-num{background:#1d9e75;color:white;}
 
-#props{padding:5px 12px;background:white;border-top:1px solid #eee;font-size:11px;display:flex;align-items:center;gap:10px;min-height:40px;}
+#props{padding:5px 12px;background:white;border-top:1px solid #eee;font-size:11px;display:flex;align-items:center;gap:10px;min-height:40px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -97,8 +96,8 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
-    <button id="undo-btn" onclick="undo()">↩ 戻す</button>
-    <button id="redo-btn" onclick="redo()">↪ 進む</button>
+    <button id="undo-btn" onclick="undo()" title="Ctrl+Z">↩ 戻す</button>
+    <button id="redo-btn" onclick="redo()" title="Ctrl+Y">↪ 進む</button>
     <button onclick="groupSelected()">グループ</button>
     <button onclick="ungroup()">解除</button>
   </div>
@@ -137,7 +136,7 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
   <div id="guide-steps"></div>
 </div>
 
-<div id="props">要素を選択してください</div>
+<div id="props">要素を選択して編集</div>
 
 <script>
 const MAIN_INST=[
@@ -201,6 +200,11 @@ function setupEvents(){
   stage.addEventListener('pointerdown',onDown);
   window.addEventListener('pointermove',onMove);
   window.addEventListener('pointerup',onUp);
+  window.addEventListener('keydown', e => {
+    if(e.ctrlKey && e.key === 'z') undo();
+    if(e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) redo();
+    if(e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  });
 }
 
 function getXY(e){
@@ -265,21 +269,21 @@ function addElem(type,x,y,opts={}){
   div.style.left=x+'px'; div.style.top=y+'px';
   const w=opts.w||(type==='chair'?chairSize:100), h=opts.h||(type==='chair'?chairSize:40);
   const ang=opts.angle||0;
+  const color=opts.color || (type==='chair'?currentInst.c:'#555');
   div.style.width=w+'px'; div.style.height=h+'px'; div.style.transform=`rotate(${ang}deg)`;
   
   if(type==='chair'){
-    const c=opts.color||currentInst.c, l=opts.label||currentInst.l;
-    div.innerHTML=`<div class="chair" style="border-color:${c};color:${c}"><div class="chair-text" style="font-size:${w/3}px">${l}</div></div>`;
+    div.innerHTML=`<div class="chair" style="border-color:${color};color:${color}"><div class="chair-text" style="font-size:${w/3}px">${opts.label||currentInst.l}</div></div>`;
   } else if(type==='dim'){
     div.className='elem dim-elem'; div.style.width='auto'; div.style.height='auto';
     div.innerHTML=`<div class="dim-line" style="width:${w}px;transform:rotate(${ang}deg)"></div><div class="dim-text" style="left:${w/2}px">${opts.text}</div>`;
   } else {
     div.className+=(type==='label'?' label-elem':' rect-elem');
-    div.style.borderColor=opts.color||'#555'; div.style.borderWidth=(opts.bw||2)+'px'; div.textContent=opts.text||'';
+    div.style.borderColor=color; div.style.color=color; div.style.borderWidth=(opts.bw||2)+'px'; div.textContent=opts.text||'';
     ['nw','ne','sw','se','rot'].forEach(p=>{ const h=document.createElement('div'); h.className='handle '+p; if(p!=='rot') h.dataset.pos=p; div.appendChild(h); });
   }
   stage.appendChild(div);
-  const rec={id,type,dom:div,x,y,w,h,angle:ang,color:opts.color||'#555',label:opts.label||'',text:opts.text||'',bw:opts.bw||2,gid:opts.gid||null};
+  const rec={id,type,dom:div,x,y,w,h,angle:ang,color,label:opts.label||'',text:opts.text||'',bw:opts.bw||2,gid:opts.gid||null};
   elements.push(rec); return rec;
 }
 
@@ -356,7 +360,7 @@ function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selec
 
 function updateProps(){
   const p=document.getElementById('props');
-  if(!selectedList.length){ p.textContent='要素を選択してください'; return; }
+  if(!selectedList.length){ p.textContent='要素を選択して編集'; return; }
   const s=selectedList[0];
   let h=`<button onclick="deleteSelected()" style="color:red">削除</button> `;
   if(s.type==='rect'||s.type==='label'){
@@ -366,7 +370,7 @@ function updateProps(){
   p.innerHTML=h;
 }
 function updateSel(k,v){ selectedList.forEach(s=>{
-  s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v;} if(k==='bw')s.dom.style.borderWidth=v+'px';
+  s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v; if(s.type==='chair') s.dom.querySelector('.chair').style.borderColor=v; s.dom.querySelector('.chair').style.color=v; } if(k==='bw')s.dom.style.borderWidth=v+'px';
   if(k==='label')s.dom.querySelector('.chair-text').textContent=v; if(k==='text'){ if(s.type==='dim') s.dom.querySelector('.dim-text').textContent=v; else { const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=v; hs.forEach(h=>s.dom.appendChild(h)); } }
 }); saveHistory(); }
 
@@ -376,15 +380,20 @@ function deleteSelected(){ selectedList.forEach(s=>{s.dom.remove();elements=elem
 function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); } }
 
 function saveHistory(){
-  const state=JSON.stringify({elements:elements.map(e=>({...e,dom:null}))});
+  const state=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
   history=history.slice(0,historyIndex+1); history.push(state);
   if(history.length>30)history.shift(); else historyIndex++;
+  updateHistBtns();
 }
 function undo(){ if(historyIndex>0){ historyIndex--; applyState(); } }
 function redo(){ if(historyIndex<history.length-1){ historyIndex++; applyState(); } }
 function applyState(){
   const state=JSON.parse(history[historyIndex]); elements.forEach(e=>e.dom.remove()); elements=[];
-  state.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection();
+  state.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection(); updateHistBtns();
+}
+function updateHistBtns(){
+  document.getElementById('undo-btn').disabled=historyIndex<=0;
+  document.getElementById('redo-btn').disabled=historyIndex>=history.length-1;
 }
 
 function exportTemplate(){
