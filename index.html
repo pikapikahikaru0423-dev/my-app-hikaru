@@ -2,280 +2,285 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Stage Planner v15 Skeleton</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舞台配置図 v15</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-body{
-  margin:0;
-  overflow:hidden;
-  font-family:sans-serif;
-  background:#ddd;
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP";background:#d8d6cf;overflow:hidden}
 
-#canvasWrap{
-  position:relative;
-  width:100vw;
-  height:100vh;
-}
+/* toolbar */
+#toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:6px;background:#fff;border-bottom:1px solid #ddd}
+button{font-size:12px;padding:5px 10px}
+button.active{background:#dff5ee}
 
-/* Canvas (PDF / BG) */
-#bgCanvas{
-  position:absolute;
-  top:0;left:0;
-  z-index:0;
-}
+/* stage */
+#wrap{position:relative;flex:1;overflow:auto;height:calc(100vh - 50px)}
+#zoom{position:absolute;transform-origin:0 0}
+#stage{position:relative;background:white}
+#bg{position:absolute;inset:0;pointer-events:none}
+#svg{position:absolute;inset:0;pointer-events:none}
 
-/* SVG Layer (Arc / Line / Dim) */
-#svgLayer{
-  position:absolute;
-  top:0;left:0;
-  z-index:1;
-  pointer-events:none;
-}
+/* elements */
+.elem{position:absolute;user-select:none;cursor:move}
+.chair{border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center}
+.chair span{font-size:10px}
+.rect{border:2px solid #555;background:rgba(0,0,0,0.03)}
+.label{padding:2px 6px;border:1px solid #999;background:#fff;font-size:11px}
 
-/* DOM Layer (Objects) */
-#domLayer{
-  position:absolute;
-  top:0;left:0;
-  z-index:2;
-}
+/* select */
+.sel{outline:2px solid #1d9e75}
 
-/* Element base */
-.elem{
-  position:absolute;
-  user-select:none;
-  touch-action:none;
-}
-
-.chair{
-  border-radius:50%;
-  border:2px solid #333;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:white;
-  font-size:10px;
-}
-
-.rect{
-  border:2px solid #666;
-  background:rgba(200,200,200,0.1);
-}
-
-.selected{
-  outline:2px solid #00a86b;
-}
+/* arc preview */
+.preview{stroke:#1d9e75;stroke-dasharray:4 3}
 </style>
 </head>
 
 <body>
 
-<div id="canvasWrap">
-  <canvas id="bgCanvas"></canvas>
-  <svg id="svgLayer"></svg>
-  <div id="domLayer"></div>
+<div id="toolbar">
+<button onclick="setTool('select')" id="t-select">選択</button>
+<button onclick="setTool('chair')">椅子</button>
+<button onclick="setTool('arc')" id="t-arc">弧</button>
+<button onclick="setTool('line')" id="t-line">棒</button>
+<button onclick="setTool('rect')">矩形</button>
+<button onclick="setTool('label')">ラベル</button>
+<button onclick="exportPNG()">PNG</button>
+</div>
+
+<div id="wrap">
+<div id="zoom">
+<div id="stage" style="width:1000px;height:700px;">
+<canvas id="bg"></canvas>
+<svg id="svg"></svg>
+</div>
+</div>
 </div>
 
 <script>
-/* =====================================================
-   ■ v15 ARCHITECTURE CORE
-===================================================== */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-/* --------------------------
-   ■ Scene Graph
--------------------------- */
-const Scene = {
-  elements: new Map(),
-  groups: new Map(),
-  bg: null
-};
+/* ===== STATE ===== */
+let tool="select";
+let elements=[];
+let id=0;
+let selected=new Set();
 
-/* --------------------------
-   ■ Controller
--------------------------- */
-const Controller = {
-  tool: "select",
-  selected: new Set(),
-  drag: null,
+/* arc/line */
+let arcPts=[];
+let linePts=[];
+let arcStep=0;
+let lineStep=0;
 
-  setTool(t){
-    this.tool = t;
-  },
+/* ===== DOM ===== */
+const stage=document.getElementById("stage");
+const svg=document.getElementById("svg");
+const zoom=document.getElementById("zoom");
 
-  select(id, multi=false){
-    if(!multi) this.selected.clear();
-    this.selected.add(id);
-    Renderer.updateSelection();
-  },
-
-  clearSelection(){
-    this.selected.clear();
-    Renderer.updateSelection();
-  }
-};
-
-/* --------------------------
-   ■ Renderer
--------------------------- */
-const Renderer = {
-
-  domLayer: document.getElementById("domLayer"),
-  svgLayer: document.getElementById("svgLayer"),
-
-  /* Element render */
-  renderElement(el){
-    let node;
-
-    if(el.type === "chair"){
-      node = document.createElement("div");
-      node.className = "elem chair";
-      node.textContent = el.text || "";
-      node.style.width = el.size + "px";
-      node.style.height = el.size + "px";
-      node.style.borderColor = el.color;
-      node.style.left = el.x + "px";
-      node.style.top = el.y + "px";
-    }
-
-    if(el.type === "rect"){
-      node = document.createElement("div");
-      node.className = "elem rect";
-      node.style.width = el.w + "px";
-      node.style.height = el.h + "px";
-      node.style.left = el.x + "px";
-      node.style.top = el.y + "px";
-
-      const txt = document.createElement("div");
-      txt.style.position = "absolute";
-      txt.style.top = "50%";
-      txt.style.left = "50%";
-      txt.style.transform = "translate(-50%,-50%)";
-      txt.textContent = el.text || "";
-      node.appendChild(txt);
-    }
-
-    node.dataset.id = el.id;
-
-    node.addEventListener("pointerdown", (e)=>{
-      e.stopPropagation();
-      if(e.shiftKey){
-        Controller.select(el.id,true);
-      }else{
-        Controller.select(el.id,false);
-      }
-    });
-
-    this.domLayer.appendChild(node);
-    el.node = node;
-  },
-
-  rerender(){
-    this.domLayer.innerHTML = "";
-    Scene.elements.forEach(el => this.renderElement(el));
-  },
-
-  updateSelection(){
-    Scene.elements.forEach(el=>{
-      if(el.node){
-        if(Controller.selected.has(el.id)){
-          el.node.classList.add("selected");
-        }else{
-          el.node.classList.remove("selected");
-        }
-      }
-    });
-  }
-};
-
-/* --------------------------
-   ■ Factory
--------------------------- */
-const Factory = {
-
-  id:0,
-
-  chair(x,y){
-    return {
-      id:++this.id,
-      type:"chair",
-      x,y,
-      size:30,
-      color:"#333",
-      text:"Inst"
-    };
-  },
-
-  rect(x,y){
-    return {
-      id:++this.id,
-      type:"rect",
-      x,y,
-      w:120,
-      h:60,
-      text:"Section"
-    };
-  }
-};
-
-/* --------------------------
-   ■ Input System
--------------------------- */
-const Input = {
-  init(){
-    const wrap = document.getElementById("canvasWrap");
-
-    wrap.addEventListener("pointerdown",(e)=>{
-      const x = e.clientX;
-      const y = e.clientY;
-
-      if(Controller.tool === "chair"){
-        const el = Factory.chair(x,y);
-        Scene.elements.set(el.id,el);
-        Renderer.renderElement(el);
-      }
-
-      if(Controller.tool === "rect"){
-        const el = Factory.rect(x,y);
-        Scene.elements.set(el.id,el);
-        Renderer.renderElement(el);
-      }
-
-      if(Controller.tool === "select"){
-        Controller.clearSelection();
-      }
-    });
-  }
-};
-
-/* --------------------------
-   ■ Export (Skeleton)
--------------------------- */
-const Exporter = {
-
-  png(){
-    // v15では「Scene再描画ベース」で実装予定
-    alert("PNG export skeleton (to be implemented with full renderer sync)");
-  }
-};
-
-/* --------------------------
-   ■ Init
--------------------------- */
-function init(){
-  Input.init();
-
-  // sample
-  const c1 = Factory.chair(100,100);
-  Scene.elements.set(c1.id,c1);
-
-  const r1 = Factory.rect(200,200);
-  Scene.elements.set(r1.id,r1);
-
-  Renderer.rerender();
+/* ===== TOOL ===== */
+function setTool(t){
+tool=t;
+document.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
+const btn=document.getElementById("t-"+t);
+if(btn)btn.classList.add("active");
+arcPts=[];linePts=[];arcStep=0;lineStep=0;
+clearSVG();
 }
 
-init();
+/* ===== ADD ELEMENT ===== */
+function add(type,x,y,opt={}){
+const el=document.createElement("div");
+el.className="elem";
+el.style.left=x+"px";
+el.style.top=y+"px";
 
+const obj={id:++id,type,x,y,el};
+
+if(type==="chair"){
+el.classList.add("chair");
+el.style.width="26px";
+el.style.height="26px";
+el.innerHTML=`<span>${opt.label||"A"}</span>`;
+obj.label=opt.label;
+}
+
+if(type==="rect"){
+el.classList.add("rect");
+el.style.width="100px";
+el.style.height="60px";
+}
+
+if(type==="label"){
+el.classList.add("label");
+el.textContent="label";
+}
+
+el.onclick=(e)=>{
+e.stopPropagation();
+if(tool==="select"){
+if(e.shiftKey){
+selected.has(obj.id)?selected.delete(obj.id):selected.add(obj.id);
+}else{
+selected.clear();
+selected.add(obj.id);
+}
+renderSelect();
+}
+};
+
+stage.appendChild(el);
+obj.el=el;
+elements.push(obj);
+}
+
+/* ===== SELECT ===== */
+function renderSelect(){
+elements.forEach(e=>e.el.classList.remove("sel"));
+elements.filter(e=>selected.has(e.id)).forEach(e=>{
+e.el.classList.add("sel");
+});
+}
+
+/* ===== STAGE CLICK ===== */
+stage.onclick=(e)=>{
+if(tool==="select")return;
+
+const r=stage.getBoundingClientRect();
+const x=e.clientX-r.left;
+const y=e.clientY-r.top;
+
+if(tool==="chair")add("chair",x,y,{label:"Inst"});
+if(tool==="rect")add("rect",x,y);
+if(tool==="label")add("label",x,y);
+
+/* arc */
+if(tool==="arc"){
+arcPts.push({x,y});
+if(arcPts.length===2){
+makeArc();
+arcPts=[];
+}
+}
+
+/* line */
+if(tool==="line"){
+linePts.push({x,y});
+if(linePts.length===2){
+makeLine();
+linePts=[];
+}
+}
+};
+
+/* ===== ARC (v15修正版：自動カーブ) ===== */
+function makeArc(){
+const n=4;
+const p0=arcPts[0];
+const p2=arcPts[1];
+const mid={
+x:(p0.x+p2.x)/2,
+y:(p0.y+p2.y)/2-70
+};
+
+for(let i=0;i<n;i++){
+const t=i/(n-1);
+const x=(1-t)*(1-t)*p0.x+2*(1-t)*t*mid.x+t*t*p2.x;
+const y=(1-t)*(1-t)*p0.y+2*(1-t)*t*mid.y+t*t*p2.y;
+add("chair",x,y,{label:"Arc"});
+}
+drawLine(p0,mid,p2);
+}
+
+/* ===== LINE ===== */
+function makeLine(){
+const n=4;
+const a=linePts[0],b=linePts[1];
+
+for(let i=0;i<n;i++){
+const t=i/(n-1);
+add("chair",
+a.x+(b.x-a.x)*t,
+a.y+(b.y-a.y)*t,
+{label:"Line"});
+}
+drawStraight(a,b);
+}
+
+/* ===== SVG ===== */
+function drawLine(a,b,c){
+clearSVG();
+if(c){
+const p=document.createElementNS("http://www.w3.org/2000/svg","path");
+p.setAttribute("d",`M${a.x},${a.y} Q${b.x},${b.y} ${c.x},${c.y}`);
+p.setAttribute("class","preview");
+svg.appendChild(p);
+}else{
+const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+l.setAttribute("x1",a.x);
+l.setAttribute("y1",a.y);
+l.setAttribute("x2",b.x);
+l.setAttribute("y2",b.y);
+l.setAttribute("class","preview");
+svg.appendChild(l);
+}
+}
+function drawStraight(a,b){
+clearSVG();
+const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+l.setAttribute("x1",a.x);
+l.setAttribute("y1",a.y);
+l.setAttribute("x2",b.x);
+l.setAttribute("y2",b.y);
+l.setAttribute("class","preview");
+svg.appendChild(l);
+}
+function clearSVG(){svg.innerHTML="";}
+
+/* ===== PNG（修正版：背景保持） ===== */
+function exportPNG(){
+html2canvas(stage,{
+scale:2,
+backgroundColor:"#fff",
+useCORS:true
+}).then(canvas=>{
+const a=document.createElement("a");
+a.download="stage_v15.png";
+a.href=canvas.toDataURL();
+a.click();
+});
+}
+
+/* ===== PDF ===== */
+function loadPDF(){
+const i=document.createElement("input");
+i.type="file";
+i.accept=".pdf";
+i.onchange=e=>{
+const f=new FileReader();
+f.onload=ev=>{
+pdfjsLib.getDocument({data:new Uint8Array(ev.target.result)}).promise.then(pdf=>{
+pdf.getPage(1).then(page=>{
+const vp=page.getViewport({scale:1.5});
+const c=document.getElementById("bg");
+c.width=vp.width;
+c.height=vp.height;
+stage.style.width=vp.width+"px";
+stage.style.height=vp.height+"px";
+page.render({canvasContext:c.getContext("2d"),viewport:vp});
+});
+});
+};
+f.readAsArrayBuffer(e.target.files[0]);
+};
+i.click();
+}
+
+/* ===== INIT ===== */
+setTool("select");
 </script>
 
 </body>
