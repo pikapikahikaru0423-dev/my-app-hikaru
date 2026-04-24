@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v19.2</title>
+<title>舞台配置図 Pro v19.3</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -116,10 +116,10 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
-    <button onclick="exportTemplate()">💾 保存</button>
-    <button onclick="importTemplate()">📂 読込</button>
-    <button onclick="loadPDF()">📄 PDF</button>
-    <button onclick="exportPNG()" style="background:#1d9e75;color:white;">📷 画像</button>
+    <button onclick="exportTemplate()">💾 テンプレ保存</button>
+    <button onclick="importTemplate()">📂 テンプレ読込</button>
+    <button onclick="loadPDF()">📄 PDF読込</button>
+    <button onclick="exportPNG()" style="background:#1d9e75;color:white;">📷 画像書き出し</button>
     <button onclick="resetCanvas()" style="color:#d33;">⚠ 消去</button>
   </div>
 </div>
@@ -179,12 +179,10 @@ function renderPercList(){ const container=document.getElementById('list-perc');
 function updateInstSelection(el){ document.querySelectorAll('.inst').forEach(e=>e.style.background=''); el.style.background='#e1f5ee'; }
 function switchTab(t){ ['main','other','perc'].forEach(k=>{ document.getElementById(`list-${k}`).style.display=t===k?'block':'none'; document.getElementById(`tab-${k}-btn`).className='tab '+(t===k?'active':''); }); }
 
-// --- 2. ツールとUI同期 ---
 function setTool(t){ tool=t; arcPts=[]; linePts=[]; dimPts=[]; clearSVG(); document.querySelectorAll('button[id^=btn-]').forEach(b=>b.classList.remove('active')); document.getElementById('btn-'+t)?.classList.add('active'); updateHint(); updateGuide(); }
 function syncZoom(val, src){ zoomLevel=(src==='range')?parseFloat(val):parseFloat(val)/100; document.getElementById('zoom-num').value=Math.round(zoomLevel*100); document.getElementById('zoom-range').value=zoomLevel; document.getElementById('zoom-container').style.transform=`scale(${zoomLevel})`; }
 function syncSize(val, src){ currentChairSize=parseInt(val); if(src==='range') document.getElementById('size-num').value=val; else document.getElementById('size-range').value=val; updateHint(); }
 
-// --- 3. 履歴・配置 ---
 function saveHistory(){
   const s=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
   history=history.slice(0,historyIndex+1); history.push(s); if(history.length>50)history.shift(); else historyIndex++;
@@ -222,12 +220,10 @@ function addElem(type,x,y,opts={}){
   elements.push(rec); return rec;
 }
 
-// 弧・線配置
 function handleArc(pt){ arcPts.push(pt); updateGuide(); if(arcPts.length===3){ const n=prompt("椅子の数",4); if(n){ const [p1,p2,p3]=arcPts; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); const x=Math.pow(1-t,2)*p1.x+2*(1-t)*t*p3.x+Math.pow(t,2)*p2.x; const y=Math.pow(1-t,2)*p1.y+2*(1-t)*t*p3.y+Math.pow(t,2)*p2.y; addElem('chair',x-currentChairSize/2,y-currentChairSize/2, {gid}); } saveHistory(); } arcPts=[]; clearSVG(); updateGuide(); } }
 function handleLine(pt){ const last=linePts[linePts.length-1], finalPt=last?snap(last,pt):pt; linePts.push(finalPt); updateGuide(); if(linePts.length===2){ const n=prompt("椅子の数",4); if(n){ const [p1,p2]=linePts; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); addElem('chair',p1.x+(p2.x-p1.x)*t-currentChairSize/2,p1.y+(p2.y-p1.y)*t-currentChairSize/2, {gid}); } saveHistory(); } linePts=[]; clearSVG(); updateGuide(); } }
 function handleDim(pt){ const last=dimPts[dimPts.length-1], finalPt=last?snap(last,pt):pt; dimPts.push(finalPt); updateGuide(); if(dimPts.length===2){ const val=prompt("寸法値","1.0m"); if(val){ const [p1,p2]=dimPts; const dx=p2.x-p1.x, dy=p2.y-p1.y; addElem('dim',p1.x,p1.y,{w:Math.sqrt(dx*dx+dy*dy),angle:Math.atan2(dy,dx)*180/Math.PI,text:val}); saveHistory(); } dimPts=[]; clearSVG(); updateGuide(); } }
 
-// --- 4. ドラッグ・移動 ---
 function onDown(e){
   let pt=getXY(e);
   if(e.target.classList.contains('handle')){
@@ -269,7 +265,6 @@ function onMove(e){
 }
 function onUp(){ if(draggingObjs.length||resizingObj||rotatingObj) saveHistory(); draggingObjs=[]; resizingObj=null; rotatingObj=null; }
 
-// --- 5. 選択・プロパティ・グループ操作 ---
 function selectSingle(r){ clearSelection(); selectedList=[r]; r.dom.classList.add('selected'); updateProps(); }
 function toggleSelect(r){ if(selectedList.includes(r)) { r.dom.classList.remove('selected'); selectedList=selectedList.filter(x=>x!==r); } else { r.dom.classList.add('selected'); selectedList.push(r); } updateProps(); }
 function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selected')); selectedList=[]; updateProps(); }
@@ -305,7 +300,6 @@ function deleteSelected(){
   clearSelection(); saveHistory(); 
 }
 
-// --- 6. 外部・ユーティリティ ---
 function setupEvents(){ stage.addEventListener('pointerdown',onDown); window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp); window.addEventListener('keydown', e => { if(e.key==='Shift') isShift=true; if(e.ctrlKey&&e.key==='z') undo(); if(e.ctrlKey&&e.key==='y') redo(); if(e.key==='Delete'||e.key==='Backspace') deleteSelected(); }); window.addEventListener('keyup', e => { if(e.key==='Shift') isShift=false; }); }
 function getXY(e){ const r=stage.getBoundingClientRect(); return {x:(e.clientX-r.left)/zoomLevel, y:(e.clientY-r.top)/zoomLevel}; }
 function snap(p1, p2) { if(!isShift) return p2; const dx=Math.abs(p2.x-p1.x), dy=Math.abs(p2.y-p1.y); return dx>dy?{x:p2.x,y:p1.y}:{x:p1.x,y:p2.y}; }
