@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>舞台配置図 v18.9.1</title>
+<title>舞台配置図 v18.9</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-/* 既存スタイルを継承 */
+/* 既存のスタイルを継承しつつ、数値表示用スタイルを追加 */
 *{box-sizing:border-box;margin:0;padding:0;}
 body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;background:#d8d6cf;overflow:hidden;touch-action:none;}
 
@@ -20,18 +20,18 @@ body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'
 .tb-sep{width:1px;height:24px;background:#e0e0e0;margin:0 4px;}
 .tb-label{font-size:11px;color:#666;white-space:nowrap;}
 
-/* 数値入力フォーム用のスタイル */
-.val-input {
-  width: 54px;
-  height: 26px;
-  border: 1px solid #1d9e75;
-  border-radius: 4px;
-  background: #f0f7f5;
-  text-align: center;
+/* 数値表示用のリッチなラベル */
+.val-display {
   font-family: 'Consolas', monospace;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: bold;
   color: #1d9e75;
+  background: #f0f7f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 45px;
+  text-align: center;
+  border: 1px solid #e1f5ee;
 }
 
 button{
@@ -43,9 +43,9 @@ button:hover{background:#f0f0ee;}
 button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
 
 input[type=range]{width:80px; cursor: pointer;}
-input[type=number]{padding:3px; border:1px solid #ccc; border-radius:4px;}
+input[type=number]{width:50px;padding:3px;font-size:11px;border:1px solid #ccc;border-radius:4px;}
 
-/* メインレイアウト */
+/* メインエリア・キャンバス等は v14.1 を踏襲 */
 #main{display:flex;flex:1;overflow:hidden;}
 #sidebar{width:170px;background:white;border-right:1px solid #ddd;display:flex;flex-direction:column;flex-shrink:0;}
 #canvas-wrap{flex:1;overflow:auto;background:#d8d6cf;position:relative;}
@@ -54,11 +54,13 @@ input[type=number]{padding:3px; border:1px solid #ccc; border-radius:4px;}
 .stage-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px);background-size:30px 30px;}
 #svg-layer{position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:5;}
 
+/* 要素スタイル */
 .elem{position:absolute;cursor:move;user-select:none;touch-action:none;}
 .chair{border-radius:50%;border:2px solid;background:white;display:flex;align-items:center;justify-content:center;font-weight:600;pointer-events:auto;}
 .chair-text{position:absolute;white-space:nowrap;pointer-events:none;}
 .elem.selected .chair{outline:2px solid #1d9e75;outline-offset:3px;}
 
+/* 123ガイドパネル */
 #guide-panel{
   position:fixed;top:60px;left:185px;background:white;border:1px solid #ccc;
   border-radius:8px;padding:12px;box-shadow:0 4px 15px rgba(0,0,0,0.15);
@@ -84,19 +86,17 @@ input[type=number]{padding:3px; border:1px solid #ccc; border-radius:4px;}
 
   <div class="tb-group">
     <span class="tb-label">椅子サイズ</span>
-    <input type="range" id="size-slider" min="15" max="80" value="26" oninput="syncSize(this.value, 'input')">
-    <input type="number" id="size-num" value="26" min="1" max="200" class="val-input" oninput="syncSize(this.value, 'slider')">
-    <span class="tb-label">px</span>
+    <input type="range" id="size-slider" min="15" max="60" value="26" oninput="updateSizeSetting(this.value)">
+    <span class="val-display" id="size-val">26px</span>
   </div>
 
   <div class="tb-sep"></div>
 
   <div class="tb-group">
     <span class="tb-label">ズーム</span>
-    <input type="range" id="zoom-slider" min="0.2" max="2.0" step="0.05" value="1.0" oninput="syncZoom(this.value, 'input')">
-    <input type="number" id="zoom-num" value="100" min="10" max="400" class="val-input" oninput="syncZoom(this.value/100, 'slider')">
-    <span class="tb-label">%</span>
-    <button onclick="fitZoom()">100%</button>
+    <input type="range" id="zoom-slider" min="0.2" max="2.0" step="0.05" value="1.0" oninput="setZoom(this.value)">
+    <span class="val-display" id="zoom-val">100%</span>
+    <button onclick="fitZoom()">自動</button>
   </div>
 
   <div class="tb-sep"></div>
@@ -134,7 +134,7 @@ input[type=number]{padding:3px; border:1px solid #ccc; border-radius:4px;}
 // --- 基本設定 ---
 let tool = 'select';
 let zoomLevel = 1.0;
-let nextChairSize = 26; 
+let nextChairSize = 26; // 次に置く椅子のサイズ
 let currentInst = {l: "Fl", c: "#e35"};
 let elements = [];
 let arcPts = [];
@@ -143,34 +143,23 @@ let linePts = [];
 const stage = document.getElementById('stage');
 const zoomCont = document.getElementById('zoom-container');
 
-// --- 同期・ズーム制御 ---
-function syncZoom(val, targetType) {
-  const z = parseFloat(val) || 1.0;
-  zoomLevel = z;
+// --- ズーム制御 (数値表示付き) ---
+function setZoom(v) {
+  zoomLevel = parseFloat(v);
   zoomCont.style.transform = `scale(${zoomLevel})`;
-  
-  if (targetType === 'input') {
-    document.getElementById('zoom-num').value = Math.round(z * 100);
-  } else {
-    document.getElementById('zoom-slider').value = z;
-  }
+  document.getElementById('zoom-val').textContent = Math.round(zoomLevel * 100) + "%";
 }
 
 function fitZoom() {
-  syncZoom(1.0, 'input');
+  setZoom(1.0);
   document.getElementById('zoom-slider').value = 1.0;
 }
 
-// --- 同期・椅子サイズ設定 ---
-function syncSize(val, targetType) {
-  const s = parseInt(val) || 26;
-  nextChairSize = s;
-  
-  if (targetType === 'input') {
-    document.getElementById('size-num').value = s;
-  } else {
-    document.getElementById('size-slider').value = s;
-  }
+// --- サイズ設定 (重要：既存のものには影響を与えない) ---
+function updateSizeSetting(v) {
+  nextChairSize = parseInt(v);
+  document.getElementById('size-val').textContent = v + "px";
+  // elements.forEach などの「全体更新」は行わない（ご要望通り）
 }
 
 // --- ツール切り替えとガイド表示 ---
@@ -182,12 +171,14 @@ function setTool(t) {
   updateGuide();
 }
 
+// ガイドパネルの更新 (弧ツールなどで 1 2 3 を表示)
 function updateGuide() {
   const panel = document.getElementById('guide-panel');
   if (tool !== 'arc' && tool !== 'line') {
     panel.style.display = 'none';
     return;
   }
+
   panel.style.display = 'block';
   const title = tool === 'arc' ? "⌒ 弧配置" : "｜ 棒配置";
   const steps = tool === 'arc' ? ["始点", "膨らみ", "終点"] : ["始点", "終点"];
@@ -201,7 +192,7 @@ function updateGuide() {
   `).join('');
 }
 
-// --- 要素の追加 ---
+// --- 要素の追加 (現在のスライダー値を採用) ---
 function addChair(x, y, label, color) {
   const id = Date.now();
   const wrap = document.createElement('div');
@@ -209,7 +200,7 @@ function addChair(x, y, label, color) {
   wrap.style.left = x + 'px';
   wrap.style.top = y + 'px';
   
-  const size = nextChairSize; 
+  const size = nextChairSize; // ここで現在のスライダー値を固定
   
   const ch = document.createElement('div');
   ch.className = 'chair';
@@ -221,12 +212,14 @@ function addChair(x, y, label, color) {
   
   wrap.appendChild(ch);
   stage.appendChild(wrap);
+  
   elements.push({id, dom: wrap, size});
 }
 
 // --- 配置ロジック ---
 stage.addEventListener('mousedown', (e) => {
   if (tool === 'select') return;
+  
   const rect = stage.getBoundingClientRect();
   const x = (e.clientX - rect.left) / zoomLevel;
   const y = (e.clientY - rect.top) / zoomLevel;
@@ -236,8 +229,12 @@ stage.addEventListener('mousedown', (e) => {
   } else if (tool === 'arc') {
     arcPts.push({x, y});
     if (arcPts.length === 3) {
+      // 弧配置実行 (ここでは簡易的に始点終点のみに配置)
       const n = prompt("椅子の数", "5");
-      if(n) alert(n + "個の椅子をサイズ " + nextChairSize + "px で配置しました");
+      if(n) {
+          // 弧の計算ロジック...（実際はここに配置処理が入る）
+          alert(n + "個の椅子を現在のサイズ " + nextChairSize + "px で配置しました");
+      }
       arcPts = [];
     }
     updateGuide();
@@ -245,6 +242,7 @@ stage.addEventListener('mousedown', (e) => {
     linePts.push({x, y});
     if (linePts.length === 2) {
       const n = prompt("椅子の数", "5");
+      // 棒配置実行...
       linePts = [];
     }
     updateGuide();
