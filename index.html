@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v17.9</title>
+<title>舞台配置図 Pro v17.8</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -29,8 +29,8 @@ button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:
 button:disabled{opacity:0.3;cursor:default;}
 
 input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
-.num-input{width:45px;padding:3px;font-size:11px;border:1px solid #ccc;border-radius:4px;text-align:center;color:#1d9e75;font-weight:bold;}
-input[type=number]{padding:3px 5px;font-size:11px;border:1px solid #ccc;border-radius:4px;}
+.val-disp{min-width:35px;display:inline-block;font-weight:bold;color:#1d9e75;text-align:right;}
+input[type=number]{width:48px;padding:3px 5px;font-size:11px;border:1px solid #ccc;border-radius:4px;}
 input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;cursor:pointer;}
 
 /* Main */
@@ -98,10 +98,10 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
-    ズーム:<input type="range" id="zoom-range" min="0.3" max="1.5" step="0.01" value="1.0" oninput="changeZoom(this.value)">
-    <input type="number" id="zoom-num" class="num-input" value="100" step="1" onchange="changeZoom(this.value/100)">%
+    ズーム:<input type="range" id="zoom-range" min="0.3" max="1.5" step="0.05" value="1.0" oninput="changeZoom(this.value)">
+    <span class="val-disp" id="zoom-val">100%</span>
     サイズ:<input type="range" id="size-range" min="15" max="50" step="1" value="26" oninput="updateSizeSetting(this.value)">
-    <input type="number" id="size-num" class="num-input" value="26" step="1" onchange="updateSizeSetting(this.value)">px
+    <span class="val-disp" id="size-val">26px</span>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
@@ -152,7 +152,6 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
 </div>
 
 <script>
-// --- 基本データ ---
 const MAIN_INST=[
   {l:"Pic",c:"#e35"},{l:"Fl",c:"#e35"},{l:"Ob",c:"#c44"},
   {l:"B♭Cl",c:"#36a"},{l:"B.Cl",c:"#36a"},
@@ -178,7 +177,6 @@ let arcPts=[], linePts=[], dimPts=[], history=[], historyIndex=-1;
 const stage=document.getElementById('stage');
 const svg=document.getElementById('svg-layer');
 
-// --- 初期化 ---
 function init(){
   renderList(MAIN_INST,'list-main'); 
   renderList(OTHER_INST,'list-other');
@@ -227,7 +225,6 @@ function switchTab(t){
   });
 }
 
-// --- ツール設定 ---
 function setTool(t){
   tool=t; arcPts=[]; linePts=[]; dimPts=[]; clearSVG();
   document.querySelectorAll('button[id^=btn-]').forEach(b=>b.classList.remove('active'));
@@ -260,24 +257,18 @@ function updateGuide(){
   document.getElementById('guide-steps').innerHTML=steps.map((s,i)=>`<div class="step ${i===cur?'active':''}"><span class="step-num">${i+1}</span>${s}</div>`).join('');
 }
 
-// --- ズーム・サイズ設定 ---
 function changeZoom(v){ 
-  v = Math.min(Math.max(parseFloat(v), 0.3), 1.5); // 制限
-  zoomLevel = v; 
-  document.getElementById('zoom-container').style.transform = `scale(${zoomLevel})`; 
-  document.getElementById('zoom-range').value = zoomLevel;
-  document.getElementById('zoom-num').value = Math.round(zoomLevel * 100);
+  zoomLevel=parseFloat(v); 
+  document.getElementById('zoom-container').style.transform=`scale(${zoomLevel})`; 
+  document.getElementById('zoom-val').textContent = Math.round(zoomLevel * 100) + "%";
 }
 
 function updateSizeSetting(v){
-  v = Math.min(Math.max(parseInt(v), 15), 50); // 制限
-  currentChairSize = v;
-  document.getElementById('size-range').value = currentChairSize;
-  document.getElementById('size-num').value = currentChairSize;
+  currentChairSize = parseInt(v);
+  document.getElementById('size-val').textContent = v + "px";
   updateHint();
 }
 
-// --- イベント制御 ---
 function setupEvents(){
   stage.addEventListener('pointerdown',onDown);
   window.addEventListener('pointermove',onMove);
@@ -302,7 +293,6 @@ function snap(p1, p2) {
   return dx > dy ? {x: p2.x, y: p1.y} : {x: p1.x, y: p2.y};
 }
 
-// --- マウスアクション ---
 function onDown(e){
   let pt=getXY(e);
   if(e.target.classList.contains('handle')){
@@ -354,7 +344,6 @@ function onMove(e){
 
 function onUp(){ if(draggingObjs.length||resizingObj||rotatingObj) saveHistory(); draggingObjs=[]; resizingObj=null; rotatingObj=null; }
 
-// --- 要素追加 ---
 function addElem(type,x,y,opts={}){
   const id=opts.id||++idCounter;
   const div=document.createElement('div');
@@ -379,7 +368,6 @@ function addElem(type,x,y,opts={}){
   elements.push(rec); return rec;
 }
 
-// --- 特殊配置ツール ---
 function handleArc(pt){
   arcPts.push(pt); updateHint(); updateGuide();
   if(arcPts.length===3){
@@ -437,7 +425,6 @@ function drawPreviews(pt){
 function drawLine(p1,p2){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',p1.x);l.setAttribute('y1',p1.y);l.setAttribute('x2',p2.x);l.setAttribute('y2',p2.y);l.setAttribute('stroke','#1d9e75');svg.appendChild(l); }
 function clearSVG(){ svg.innerHTML=''; }
 
-// --- 選択・編集 ---
 function selectSingle(r){ clearSelection(); selectedList=[r]; r.dom.classList.add('selected'); updateProps(); updateHint(); }
 function toggleSelect(r){ if(selectedList.includes(r)) { r.dom.classList.remove('selected'); selectedList=selectedList.filter(x=>x!==r); } else { r.dom.classList.add('selected'); selectedList.push(r); } updateProps(); updateHint(); }
 function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selected')); selectedList=[]; updateProps(); updateHint(); }
@@ -463,7 +450,6 @@ function groupSelected(){ if(selectedList.length<2)return; const gid=++gCounter;
 function deleteSelected(){ selectedList.forEach(s=>{s.dom.remove();elements=elements.filter(e=>e.id!==s.id);}); clearSelection(); saveHistory(); }
 function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); } }
 
-// --- 履歴管理 ---
 function saveHistory(){
   const s=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
   history=history.slice(0,historyIndex+1); history.push(s); if(history.length>30)history.shift(); else historyIndex++;
@@ -476,7 +462,6 @@ function applyState(){
   s.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection();
 }
 
-// --- 入出力 ---
 function exportTemplate(){
   const d=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([d],{type:'application/json'})); a.download='stage.json'; a.click();
