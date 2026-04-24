@@ -405,4 +405,88 @@ function handleDim(pt){
   const last=dimPts[dimPts.length-1], finalPt=last?snap(last,pt):pt;
   dimPts.push(finalPt); updateHint(); updateGuide();
   if(dimPts.length===2){
-    const val=prompt("寸法値","1.0m
+    const val=prompt("寸法値","1.0m");
+    if(val){
+      const [p1,p2]=dimPts; const dx=p2.x-p1.x, dy=p2.y-p1.y;
+      addElem('dim',p1.x,p1.y,{w:Math.sqrt(dx*dx+dy*dy),angle:Math.atan2(dy,dx)*180/Math.PI,text:val});
+      saveHistory();
+    }
+    dimPts=[]; clearSVG(); updateHint(); updateGuide();
+  }
+}
+
+function drawPreviews(pt){
+  clearSVG();
+  if(arcPts.length===1) drawLine(arcPts[0],pt);
+  if(arcPts.length===2) { const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',`M${arcPts[0].x},${arcPts[0].y} Q${pt.x},${pt.y} ${arcPts[1].x},${arcPts[1].y}`); p.setAttribute('stroke','#1d9e75'); p.setAttribute('fill','none'); svg.appendChild(p); }
+  if(linePts.length===1) drawLine(linePts[0], snap(linePts[0],pt));
+  if(dimPts.length===1) drawLine(dimPts[0], snap(dimPts[0],pt));
+}
+function drawLine(p1,p2){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',p1.x);l.setAttribute('y1',p1.y);l.setAttribute('x2',p2.x);l.setAttribute('y2',p2.y);l.setAttribute('stroke','#1d9e75');svg.appendChild(l); }
+function clearSVG(){ svg.innerHTML=''; }
+
+function selectSingle(r){ clearSelection(); selectedList=[r]; r.dom.classList.add('selected'); updateProps(); updateHint(); }
+function toggleSelect(r){ if(selectedList.includes(r)) { r.dom.classList.remove('selected'); selectedList=selectedList.filter(x=>x!==r); } else { r.dom.classList.add('selected'); selectedList.push(r); } updateProps(); updateHint(); }
+function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selected')); selectedList=[]; updateProps(); updateHint(); }
+
+function updateProps(){
+  const p=document.getElementById('props');
+  if(!selectedList.length){ p.textContent='要素を選択して編集'; return; }
+  const s=selectedList[0];
+  let h=`<button onclick="deleteSelected()" style="color:red">削除</button> `;
+  if(s.type!=='chair' && s.type!=='dim'){
+    h+=`色:<input type="color" value="${s.color}" oninput="updateSel('color',this.value)"> 太さ:<input type="number" value="${s.bw}" oninput="updateSel('bw',+this.value)"> `;
+  }
+  h+=`内容:<input type="text" value="${s.type==='chair'?s.label:s.text}" oninput="updateSel('${s.type==='chair'?'label':'text'}',this.value)">`;
+  p.innerHTML=h;
+}
+function updateSel(k,v){ selectedList.forEach(s=>{
+  s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v; if(s.type==='chair') s.dom.querySelector('.chair').style.borderColor=v;} 
+  if(k==='label')s.dom.querySelector('.chair-text').textContent=v;
+  if(k==='text'){ if(s.type==='dim') s.dom.querySelector('.dim-text').textContent=v; else { const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=v; hs.forEach(h=>s.dom.appendChild(h)); } }
+}); saveHistory(); }
+
+function groupSelected(){ if(selectedList.length<2)return; const gid=++gCounter; selectedList.forEach(s=>{s.gid=gid;s.dom.classList.add('grouped-member');}); saveHistory(); }
+function deleteSelected(){ selectedList.forEach(s=>{s.dom.remove();elements=elements.filter(e=>e.id!==s.id);}); clearSelection(); saveHistory(); }
+function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); } }
+
+function saveHistory(){
+  const s=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
+  history=history.slice(0,historyIndex+1); history.push(s); if(history.length>30)history.shift(); else historyIndex++;
+  document.getElementById('undo-btn').disabled=historyIndex<=0; document.getElementById('redo-btn').disabled=historyIndex>=history.length-1;
+}
+function undo(){ if(historyIndex>0){ historyIndex--; applyState(); } }
+function redo(){ if(historyIndex<history.length-1){ historyIndex++; applyState(); } }
+function applyState(){
+  const s=JSON.parse(history[historyIndex]); elements.forEach(e=>e.dom.remove()); elements=[];
+  s.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection();
+}
+
+function exportTemplate(){
+  const d=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([d],{type:'application/json'})); a.download='stage.json'; a.click();
+}
+function importTemplate(){
+  const i=document.createElement('input'); i.type='file'; i.onchange=async e=>{
+    const d=JSON.parse(await e.target.files[0].text()); elements.forEach(el=>el.dom.remove()); elements=[];
+    d.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); saveHistory();
+  }; i.click();
+}
+
+async function loadPDF(){
+  const i=document.createElement('input'); i.type='file'; i.accept='.pdf';
+  i.onchange=async e=>{
+    const d=new Uint8Array(await e.target.files[0].arrayBuffer());
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await pdfjsLib.getDocument({data:d}).promise; const page=await pdf.getPage(1);
+    const vp=page.getViewport({scale:1.5}); const cv=document.getElementById('bg');
+    cv.width=vp.width; cv.height=vp.height; stage.style.width=vp.width+'px'; stage.style.height=vp.height+'px';
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; cv.style.display='block';
+  }; i.click();
+}
+function exportPNG(){ html2canvas(stage,{scale:2}).then(c=>{ const a=document.createElement('a'); a.download='stage.png'; a.href=c.toDataURL(); a.click(); }); }
+
+window.onload=init;
+</script>
+</body>
+</html>
