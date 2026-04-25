@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v19.3</title>
+<title>舞台配置図 Pro v19.4</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -11,33 +11,19 @@
 body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;background:#d8d6cf;overflow:hidden;touch-action:none;}
 
 /* Toolbar */
-#toolbar{
-  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-  padding:5px 10px;background:white;border-bottom:1px solid #ddd;
-  min-height:42px;flex-shrink:0;z-index:100;
-}
+#toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 10px;background:white;border-bottom:1px solid #ddd;min-height:42px;flex-shrink:0;z-index:100;}
 .tb-group{display:flex;align-items:center;gap:4px;font-size:11px;}
 .tb-sep{width:1px;height:22px;background:#e0e0e0;margin:0 2px;}
 
-button{
-  padding:6px 10px;font-size:11px;border:1px solid #ccc;border-radius:5px;
-  background:white;cursor:pointer;color:#333;white-space:nowrap;
-  transition:background .12s;
-}
+button{padding:6px 10px;font-size:11px;border:1px solid #ccc;border-radius:5px;background:white;cursor:pointer;color:#333;white-space:nowrap;transition:background .12s;}
 button:hover{background:#f0f0ee;}
 button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
 button:disabled{opacity:0.3;cursor:default;}
 
-.val-input {
-  width: 45px; height: 22px; border: 1px solid #1d9e75; border-radius: 4px;
-  background: #f0f7f5; text-align: center; font-weight: bold; color: #1d9e75; outline: none;
-  font-size: 11px;
-}
+.val-input {width:45px;height:22px;border:1px solid #1d9e75;border-radius:4px;background:#f0f7f5;text-align:center;font-weight:bold;color:#1d9e75;outline:none;font-size:11px;}
 input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
-input[type=number]{padding:3px 5px;font-size:11px;border:1px solid #ccc;border-radius:4px;}
-input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;cursor:pointer;}
 
-/* Main Layout */
+/* Layout */
 #main{display:flex;flex:1;overflow:hidden;}
 #sidebar{width:175px;background:white;border-right:1px solid #ddd;display:flex;flex-direction:column;flex-shrink:0;}
 .tabs{display:flex;border-bottom:1px solid #eee;background:#f9f9f9;}
@@ -74,11 +60,7 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
 .se{bottom:-6px;right:-6px;cursor:nwse-resize;}
 .rot{top:-25px;left:calc(50% - 6px);cursor:crosshair;background:#ff9800;}
 
-#guide-panel{
-  position:fixed;top:55px;left:190px;background:white;border:1px solid #ccc;
-  border-radius:8px;padding:12px;box-shadow:0 4px 15px rgba(0,0,0,0.15);
-  display:none;z-index:1000;font-size:12px;min-width:160px;
-}
+#guide-panel{position:fixed;top:55px;left:190px;background:white;border:1px solid #ccc;border-radius:8px;padding:12px;box-shadow:0 4px 15px rgba(0,0,0,0.15);display:none;z-index:1000;font-size:12px;min-width:160px;}
 .step{display:flex;align-items:center;gap:8px;margin:5px 0;opacity:0.3;}
 .step.active{opacity:1;color:#1d9e75;font-weight:bold;}
 .step-num{width:18px;height:18px;background:#eee;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;}
@@ -109,10 +91,10 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
-    <button id="undo-btn" onclick="undo()" title="Ctrl+Z">↩ 戻す</button>
-    <button id="redo-btn" onclick="redo()" title="Ctrl+Y">↪ 進む</button>
-    <button onclick="groupSelected()" title="複数選択した要素をグループ化">グループ化</button>
-    <button onclick="ungroupSelected()" title="グループを解除">解除</button>
+    <button id="undo-btn" onclick="undo()">↩ 戻す</button>
+    <button id="redo-btn" onclick="redo()">↪ 進む</button>
+    <button onclick="groupSelected()">グループ化</button>
+    <button onclick="ungroupSelected()">解除</button>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
@@ -157,12 +139,10 @@ input[type=color]{width:30px;height:24px;padding:0;border:none;background:none;c
 </div>
 
 <script>
-// --- 1. 楽器データと基本定数 ---
 const MAIN_INST=[{l:"Pic",c:"#e35"},{l:"Fl",c:"#e35"},{l:"Ob",c:"#c44"},{l:"B♭Cl",c:"#36a"},{l:"B.Cl",c:"#36a"},{l:"A.Sax",c:"#1a8"},{l:"T.Sax",c:"#1a8"},{l:"B.Sax",c:"#1a8"},{l:"Fg",c:"#c44"},{l:"Tp",c:"#c70"},{l:"Tb",c:"#a84"},{l:"Hr",c:"#84a"},{l:"Tu",c:"#08a"},{l:"Eu",c:"#08a"},{l:"Stb",c:"#555"}];
 const OTHER_INST=[{l:"Cor Angl.",c:"#c44"},{l:"E♭Cl",c:"#36a"},{l:"A.Cl",c:"#36a"},{l:"CA.Cl",c:"#36a"},{l:"S.Sax",c:"#1a8"}];
 const PERC_LABELS=["BD","Chime","Harp","Piano","Vib.","Xlo.","Marb.","Glo.","W.C.","T.-tam","Timb.","Bongos","Congas","StPa","Base","Synth."];
 const PERC_CHAIRS=["Timp.","S.D.","4Tom","S.Cym","C.Cym","Drm","Bongos","Congas"];
-const PERC_MARCHING=["M.S.D.","M.BD1","M.BD2","M.BD3","M.BD4","TD"];
 
 let elements=[], selectedList=[], tool='select';
 let zoomLevel=1.0, currentChairSize=26, idCounter=0, gCounter=0;
@@ -175,16 +155,16 @@ const svg=document.getElementById('svg-layer');
 
 function init(){ renderList(MAIN_INST,'list-main'); renderList(OTHER_INST,'list-other'); renderPercList(); setupEvents(); saveHistory(); updateHint(); updateGuide(); }
 function renderList(list,id){ const container=document.getElementById(id); list.forEach(inst=>{ const div=document.createElement('div'); div.className='inst'; div.innerHTML=`<span style="width:10px;height:10px;background:${inst.c};border-radius:50%"></span>${inst.l}`; div.onclick=()=>{ currentInst=inst; updateInstSelection(div); if(tool==='select') setTool('chair'); }; container.appendChild(div); }); }
-function renderPercList(){ const container=document.getElementById('list-perc'); const addSec=(title,list,type)=>{ const h=document.createElement('div'); h.className='inst-header'; h.textContent=title; container.appendChild(h); list.forEach(l=>{ const div=document.createElement('div'); div.className='inst'; const isChair = type === 'chair' || type === 'marching'; div.innerHTML=`<span style="width:10px;height:10px;background:#2a4a8a;border-radius:${isChair?'50%':'2px'}"></span>${l}`; div.onclick=()=>{ updateInstSelection(div); if(isChair){ currentInst={l:l,c:"#2a4a8a"}; setTool('chair'); } else { addElem('label',400,300,{text:l, color:"#2a4a8a", w:60, h:30}); setTool('select'); } }; container.appendChild(div); }); }; addSec("ラベル", PERC_LABELS, "label"); addSec("円形", PERC_CHAIRS, "chair"); addSec("マーチング", PERC_MARCHING, "marching"); }
+function renderPercList(){ const container=document.getElementById('list-perc'); const addSec=(title,list,type)=>{ const h=document.createElement('div'); h.className='inst-header'; h.textContent=title; container.appendChild(h); list.forEach(l=>{ const div=document.createElement('div'); div.className='inst'; const isChair = type === 'chair'; div.innerHTML=`<span style="width:10px;height:10px;background:#2a4a8a;border-radius:${isChair?'50%':'2px'}"></span>${l}`; div.onclick=()=>{ updateInstSelection(div); if(isChair){ currentInst={l:l,c:"#2a4a8a"}; setTool('chair'); } else { addElem('label',400,300,{text:l, color:"#2a4a8a", w:60, h:30}); setTool('select'); } }; container.appendChild(div); }); }; addSec("ラベル", PERC_LABELS, "label"); addSec("円形", PERC_CHAIRS, "chair"); }
 function updateInstSelection(el){ document.querySelectorAll('.inst').forEach(e=>e.style.background=''); el.style.background='#e1f5ee'; }
 function switchTab(t){ ['main','other','perc'].forEach(k=>{ document.getElementById(`list-${k}`).style.display=t===k?'block':'none'; document.getElementById(`tab-${k}-btn`).className='tab '+(t===k?'active':''); }); }
 
-function setTool(t){ tool=t; arcPts=[]; linePts=[]; dimPts=[]; clearSVG(); document.querySelectorAll('button[id^=btn-]').forEach(b=>b.classList.remove('active')); document.getElementById('btn-'+t)?.classList.add('active'); updateHint(); updateGuide(); }
+function setTool(t){ tool=t; arcPts=[]; linePts=[]; dimPts=[]; refreshSVG(); document.querySelectorAll('button[id^=btn-]').forEach(b=>b.classList.remove('active')); document.getElementById('btn-'+t)?.classList.add('active'); updateHint(); updateGuide(); }
 function syncZoom(val, src){ zoomLevel=(src==='range')?parseFloat(val):parseFloat(val)/100; document.getElementById('zoom-num').value=Math.round(zoomLevel*100); document.getElementById('zoom-range').value=zoomLevel; document.getElementById('zoom-container').style.transform=`scale(${zoomLevel})`; }
-function syncSize(val, src){ currentChairSize=parseInt(val); if(src==='range') document.getElementById('size-num').value=val; else document.getElementById('size-range').value=val; updateHint(); }
+function syncSize(val, src){ currentChairSize=parseInt(val); if(src==='range') document.getElementById('size-num').value=val; else document.getElementById('size-range').value=val; }
 
 function saveHistory(){
-  const s=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))});
+  const s=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid,pathType:e.pathType,pathPts:e.pathPts,pathT:e.pathT}))});
   history=history.slice(0,historyIndex+1); history.push(s); if(history.length>50)history.shift(); else historyIndex++;
   updateHistoryButtons();
 }
@@ -192,7 +172,7 @@ function undo(){ if(historyIndex>0){ historyIndex--; applyState(); } }
 function redo(){ if(historyIndex<history.length-1){ historyIndex++; applyState(); } }
 function applyState(){
   const s=JSON.parse(history[historyIndex]); elements.forEach(e=>e.dom.remove()); elements=[];
-  s.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection(); updateHistoryButtons();
+  s.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection(); updateHistoryButtons(); refreshSVG();
 }
 function updateHistoryButtons(){ document.getElementById('undo-btn').disabled=(historyIndex<=0); document.getElementById('redo-btn').disabled=(historyIndex>=history.length-1); }
 
@@ -216,13 +196,28 @@ function addElem(type,x,y,opts={}){
   }
   if(opts.gid) div.classList.add('grouped-member');
   stage.appendChild(div);
-  const rec={id,type,dom:div,x,y,w,h,angle:ang,color,label:opts.label||'',text:opts.text||'',bw:opts.bw||1.5,gid:opts.gid||null};
+  const rec={id,type,dom:div,x,y,w,h,angle:ang,color,label:opts.label||'',text:opts.text||'',bw:opts.bw||1.5,gid:opts.gid||null,pathType:opts.pathType||null,pathPts:opts.pathPts||null,pathT:opts.pathT!==undefined?opts.pathT:null};
   elements.push(rec); return rec;
 }
 
-function handleArc(pt){ arcPts.push(pt); updateGuide(); if(arcPts.length===3){ const n=prompt("椅子の数",4); if(n){ const [p1,p2,p3]=arcPts; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); const x=Math.pow(1-t,2)*p1.x+2*(1-t)*t*p3.x+Math.pow(t,2)*p2.x; const y=Math.pow(1-t,2)*p1.y+2*(1-t)*t*p3.y+Math.pow(t,2)*p2.y; addElem('chair',x-currentChairSize/2,y-currentChairSize/2, {gid}); } saveHistory(); } arcPts=[]; clearSVG(); updateGuide(); } }
-function handleLine(pt){ const last=linePts[linePts.length-1], finalPt=last?snap(last,pt):pt; linePts.push(finalPt); updateGuide(); if(linePts.length===2){ const n=prompt("椅子の数",4); if(n){ const [p1,p2]=linePts; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); addElem('chair',p1.x+(p2.x-p1.x)*t-currentChairSize/2,p1.y+(p2.y-p1.y)*t-currentChairSize/2, {gid}); } saveHistory(); } linePts=[]; clearSVG(); updateGuide(); } }
-function handleDim(pt){ const last=dimPts[dimPts.length-1], finalPt=last?snap(last,pt):pt; dimPts.push(finalPt); updateGuide(); if(dimPts.length===2){ const val=prompt("寸法値","1.0m"); if(val){ const [p1,p2]=dimPts; const dx=p2.x-p1.x, dy=p2.y-p1.y; addElem('dim',p1.x,p1.y,{w:Math.sqrt(dx*dx+dy*dy),angle:Math.atan2(dy,dx)*180/Math.PI,text:val}); saveHistory(); } dimPts=[]; clearSVG(); updateGuide(); } }
+// 軌道計算
+function getPosOnPath(type,pts,t){
+  if(type==='arc'){
+    const [p1,p2,p3]=pts;
+    const x=Math.pow(1-t,2)*p1.x+2*(1-t)*t*p3.x+Math.pow(t,2)*p2.x;
+    const y=Math.pow(1-t,2)*p1.y+2*(1-t)*t*p3.y+Math.pow(t,2)*p2.y;
+    return {x,y};
+  } else if(type==='line'){
+    const [p1,p2]=pts;
+    return {x:p1.x+(p2.x-p1.x)*t, y:p1.y+(p2.y-p1.y)*t};
+  }
+  return null;
+}
+
+// 弧・線配置
+function handleArc(pt){ arcPts.push(pt); updateGuide(); if(arcPts.length===3){ const n=prompt("椅子の数",4); if(n){ const pts=[...arcPts]; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); const pos=getPosOnPath('arc',pts,t); addElem('chair',pos.x-currentChairSize/2,pos.y-currentChairSize/2,{gid,pathType:'arc',pathPts:pts,pathT:t}); } saveHistory(); refreshSVG(); } arcPts=[]; updateGuide(); } }
+function handleLine(pt){ const last=linePts[linePts.length-1], finalPt=last?snap(last,pt):pt; linePts.push(finalPt); updateGuide(); if(linePts.length===2){ const n=prompt("椅子の数",4); if(n){ const pts=[...linePts]; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); const pos=getPosOnPath('line',pts,t); addElem('chair',pos.x-currentChairSize/2,pos.y-currentChairSize/2,{gid,pathType:'line',pathPts:pts,pathT:t}); } saveHistory(); refreshSVG(); } linePts=[]; updateGuide(); } }
+function handleDim(pt){ const last=dimPts[dimPts.length-1], finalPt=last?snap(last,pt):pt; dimPts.push(finalPt); updateGuide(); if(dimPts.length===2){ const val=prompt("寸法値","1.0m"); if(val){ const [p1,p2]=dimPts; const dx=p2.x-p1.x, dy=p2.y-p1.y; addElem('dim',p1.x,p1.y,{w:Math.sqrt(dx*dx+dy*dy),angle:Math.atan2(dy,dx)*180/Math.PI,text:val}); saveHistory(); } dimPts=[]; updateGuide(); } }
 
 function onDown(e){
   let pt=getXY(e);
@@ -243,7 +238,7 @@ function onDown(e){
         if(obj.gid) { elements.filter(el => el.gid === obj.gid).forEach(m => { if(!allMembers.includes(m)) allMembers.push(m); }); }
         else { if(!allMembers.includes(obj)) allMembers.push(obj); }
       });
-      draggingObjs = allMembers.map(o => ({obj:o, ox:pt.x-o.x, oy:pt.y-o.y}));
+      draggingObjs = allMembers.map(o => ({obj:o, ox:pt.x-o.x, oy:pt.y-o.y, startPt:pt}));
     }
     return;
   }
@@ -258,10 +253,37 @@ function onDown(e){
 
 function onMove(e){
   let pt=getXY(e);
-  if(draggingObjs.length){ draggingObjs.forEach(d=>{ d.obj.x=pt.x-d.ox; d.obj.y=pt.y-d.oy; d.obj.dom.style.left=d.obj.x+'px'; d.obj.dom.style.top=d.obj.y+'px'; }); }
+  if(draggingObjs.length){
+    draggingObjs.forEach(d=>{
+      if(d.obj.pathType && d.obj.pathPts){
+        // パス追従ロジック
+        const pts=d.obj.pathPts;
+        if(d.obj.pathType==='line'){
+          const [p1,p2]=pts;
+          const len2=(p2.x-p1.x)**2+(p2.y-p1.y)**2;
+          let t=((pt.x-p1.x)*(p2.x-p1.x)+(pt.y-p1.y)*(p2.y-p1.y))/len2;
+          t=Math.max(0,Math.min(1,t)); d.obj.pathT=t;
+          const pos=getPosOnPath('line',pts,t); d.obj.x=pos.x-d.obj.w/2; d.obj.y=pos.y-d.obj.h/2;
+        } else if(d.obj.pathType==='arc'){
+          // 弧のスライド（最近傍探索の簡易版：マウス角度でTを推定）
+          const [p1,p2,p3]=pts;
+          let bestT=0, minDist=99999;
+          for(let i=0;i<=100;i++){
+            const testT=i/100; const p=getPosOnPath('arc',pts,testT);
+            const dist=(p.x-pt.x)**2+(p.y-pt.y)**2; if(dist<minDist){minDist=dist; bestT=testT;}
+          }
+          d.obj.pathT=bestT; const pos=getPosOnPath('arc',pts,bestT);
+          d.obj.x=pos.x-d.obj.w/2; d.obj.y=pos.y-d.obj.h/2;
+        }
+      } else {
+        d.obj.x=pt.x-d.ox; d.obj.y=pt.y-d.oy;
+      }
+      d.obj.dom.style.left=d.obj.x+'px'; d.obj.dom.style.top=d.obj.y+'px';
+    });
+  }
   if(resizingObj){ const r=resizingObj; if(resizeHandle==='se'){ r.w=Math.max(20,pt.x-r.x); r.h=Math.max(20,pt.y-r.y); } else if(resizeHandle==='nw'){ const or=r.x+r.w, ob=r.y+r.h; r.x=pt.x; r.y=pt.y; r.w=Math.max(20,or-pt.x); r.h=Math.max(20,ob-pt.y); } r.dom.style.left=r.x+'px'; r.dom.style.top=r.y+'px'; r.dom.style.width=r.w+'px'; r.dom.style.height=r.h+'px'; }
   if(rotatingObj){ const r=rotatingObj, c={x:r.x+r.w/2, y:r.y+r.h/2}; let a=startAng+(Math.atan2(pt.y-c.y, pt.x-c.x)-startMouseAng)*180/Math.PI; if(isShift) a=Math.round(a/45)*45; r.angle=a; r.dom.style.transform=`rotate(${r.angle}deg)`; }
-  if(arcPts.length||linePts.length||dimPts.length) drawPreviews(pt);
+  drawPreviews(pt);
 }
 function onUp(){ if(draggingObjs.length||resizingObj||rotatingObj) saveHistory(); draggingObjs=[]; resizingObj=null; rotatingObj=null; }
 
@@ -271,48 +293,76 @@ function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selec
 
 function groupSelected(){ if(selectedList.length<2)return; const gid=++gCounter; selectedList.forEach(s=>{s.gid=gid; s.dom.classList.add('grouped-member');}); saveHistory(); }
 function ungroupSelected(){
-  const gids = new Set();
-  selectedList.forEach(s => { if(s.gid) gids.add(s.gid); });
-  if(gids.size === 0) return;
-  elements.forEach(el => {
-    if(gids.has(el.gid)) { el.gid = null; el.dom.classList.remove('grouped-member'); }
-  });
-  updateProps(); saveHistory();
+  const gids=new Set(); selectedList.forEach(s=>{if(s.gid)gids.add(s.gid);}); if(gids.size===0)return;
+  elements.forEach(el=>{if(gids.has(el.gid)){el.gid=null; el.dom.classList.remove('grouped-member'); el.pathType=null; el.pathPts=null;}});
+  updateProps(); saveHistory(); refreshSVG();
 }
 
 function updateProps(){
   const p=document.getElementById('props'); if(!selectedList.length){ p.textContent='要素を選択して編集'; return; }
-  const s=selectedList[0]; const hasGroup = selectedList.some(el => el.gid);
+  const s=selectedList[0]; const hasGroup=selectedList.some(el=>el.gid);
   let h=`<button onclick="clearSelection()" style="background:#eee;">解除</button> <button onclick="deleteSelected()" style="color:red">削除</button> `;
-  if(hasGroup) h += `<button onclick="ungroupSelected()">グループ解除</button> `;
-  if(s.type!=='chair' && s.type!=='dim'){ h+=`色:<input type="color" value="${s.color}" oninput="updateSel('color',this.value)"> 太さ:<input type="number" value="${s.bw}" oninput="updateSel('bw',+this.value)"> `; }
+  if(hasGroup) h+=`<button onclick="ungroupSelected()">グループ解除</button> `;
+  if(s.type!=='chair' && s.type!=='dim'){ h+=`色:<input type="color" value="${s.color}" oninput="updateSel('color',this.value)"> `; }
   h+=`内容:<input type="text" value="${s.type==='chair'?s.label:s.text}" oninput="updateSel('${s.type==='chair'?'label':'text'}',this.value)">`;
   p.innerHTML=h;
 }
-function updateSel(k,v){ selectedList.forEach(s=>{ s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v; if(s.type==='chair') s.dom.querySelector('.chair').style.borderColor=v;} if(k==='label')s.dom.querySelector('.chair-text').textContent=v; if(k==='text'){ if(s.type==='dim') s.dom.querySelector('.dim-text').textContent=v; else { const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=v; hs.forEach(h=>s.dom.appendChild(h)); } } }); saveHistory(); }
+function updateSel(k,v){ selectedList.forEach(s=>{ s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v;} if(k==='label')s.dom.querySelector('.chair-text').textContent=v; if(k==='text'){ if(s.type==='dim') s.dom.querySelector('.dim-text').textContent=v; else { const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=v; hs.forEach(h=>s.dom.appendChild(h)); } } }); saveHistory(); }
 function deleteSelected(){ 
-  const targets = [];
-  selectedList.forEach(s => {
-    if(s.gid) elements.filter(el => el.gid === s.gid).forEach(m => { if(!targets.includes(m)) targets.push(m); });
-    else if(!targets.includes(s)) targets.push(s);
-  });
-  targets.forEach(t => { t.dom.remove(); elements=elements.filter(e => e.id!==t.id); });
-  clearSelection(); saveHistory(); 
+  const targets=[]; selectedList.forEach(s=>{ if(s.gid) elements.filter(el=>el.gid===s.gid).forEach(m=>{if(!targets.includes(m))targets.push(m);}); else if(!targets.includes(s))targets.push(s); });
+  targets.forEach(t=>{ t.dom.remove(); elements=elements.filter(e=>e.id!==t.id); });
+  clearSelection(); saveHistory(); refreshSVG();
 }
 
-function setupEvents(){ stage.addEventListener('pointerdown',onDown); window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp); window.addEventListener('keydown', e => { if(e.key==='Shift') isShift=true; if(e.ctrlKey&&e.key==='z') undo(); if(e.ctrlKey&&e.key==='y') redo(); if(e.key==='Delete'||e.key==='Backspace') deleteSelected(); }); window.addEventListener('keyup', e => { if(e.key==='Shift') isShift=false; }); }
+function setupEvents(){ stage.addEventListener('pointerdown',onDown); window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp); window.addEventListener('keydown', e=>{ if(e.key==='Shift') isShift=true; if(e.ctrlKey&&e.key==='z') undo(); if(e.ctrlKey&&e.key==='y') redo(); if(e.key==='Delete'||e.key==='Backspace') deleteSelected(); }); window.addEventListener('keyup', e=>{ if(e.key==='Shift') isShift=false; }); }
 function getXY(e){ const r=stage.getBoundingClientRect(); return {x:(e.clientX-r.left)/zoomLevel, y:(e.clientY-r.top)/zoomLevel}; }
 function snap(p1, p2) { if(!isShift) return p2; const dx=Math.abs(p2.x-p1.x), dy=Math.abs(p2.y-p1.y); return dx>dy?{x:p2.x,y:p1.y}:{x:p1.x,y:p2.y}; }
-function clearSVG(){ svg.innerHTML=''; }
-function drawPreviews(pt){ clearSVG(); if(arcPts.length===1) drawLine(arcPts[0],pt); if(arcPts.length===2) { const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',`M${arcPts[0].x},${arcPts[0].y} Q${pt.x},${pt.y} ${arcPts[1].x},${arcPts[1].y}`); p.setAttribute('stroke','#1d9e75'); p.setAttribute('fill','none'); svg.appendChild(p); } if(linePts.length===1) drawLine(linePts[0], snap(linePts[0],pt)); if(dimPts.length===1) drawLine(dimPts[0], snap(dimPts[0],pt)); }
+
+// ガイド線描画
+function refreshSVG(){
+  svg.innerHTML='';
+  const gids=new Set();
+  elements.forEach(el=>{
+    if(el.gid && el.pathType && el.pathPts && !gids.has(el.gid)){
+      gids.add(el.gid);
+      if(el.pathType==='arc'){
+        const [p1,p2,p3]=el.pathPts;
+        const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+        p.setAttribute('d',`M${p1.x},${p1.y} Q${p3.x},${p3.y} ${p2.x},${p2.y}`);
+        p.setAttribute('stroke','rgba(29,158,117,0.4)'); p.setAttribute('fill','none'); p.setAttribute('stroke-dasharray','5,5');
+        svg.appendChild(p);
+      } else if(el.pathType==='line'){
+        const [p1,p2]=el.pathPts;
+        const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1',p1.x); l.setAttribute('y1',p1.y); l.setAttribute('x2',p2.x); l.setAttribute('y2',p2.y);
+        l.setAttribute('stroke','rgba(29,158,117,0.4)'); l.setAttribute('stroke-dasharray','5,5');
+        svg.appendChild(l);
+      }
+    }
+  });
+}
+
+function drawPreviews(pt){
+  refreshSVG();
+  if(arcPts.length===1) drawLine(arcPts[0],pt);
+  if(arcPts.length===2) {
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',`M${arcPts[0].x},${arcPts[0].y} Q${pt.x},${pt.y} ${arcPts[1].x},${arcPts[1].y}`);
+    p.setAttribute('stroke','#1d9e75'); p.setAttribute('fill','none'); svg.appendChild(p);
+  }
+  if(linePts.length===1) drawLine(linePts[0], snap(linePts[0],pt));
+  if(dimPts.length===1) drawLine(dimPts[0], snap(dimPts[0],pt));
+}
 function drawLine(p1,p2){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',p1.x);l.setAttribute('y1',p1.y);l.setAttribute('x2',p2.x);l.setAttribute('y2',p2.y);l.setAttribute('stroke','#1d9e75');svg.appendChild(l); }
-function updateHint(){ const h=document.getElementById('hint-box'); let txt={select:"選択。Shift+クリックで複数。グループは全員動きます。",chair:"クリックで椅子配置。",arc:"3クリックで配置（自動グループ化）。",line:"2クリックで配置（自動グループ化）。",label:"ラベル配置。",rect:"四角配置。",dim:"寸法計測。"}[tool]; h.innerHTML=`💡 ヒント: ${txt}`; }
-function updateGuide(){ const g=document.getElementById('guide-panel'); if(!['arc','line','dim'].includes(tool)){ g.style.display='none'; return; } g.style.display='block'; const steps={arc:['始点','終点','膨らみ'],line:['始点','終点'],dim:['始点','終点']}[tool]; const cur=[arcPts,linePts,dimPts].find(a=>a.length>0)?.length||0; document.getElementById('guide-title').textContent={arc:'⌒ 弧配置',line:'｜ 線配置',dim:'↔ 寸法'}[tool]; document.getElementById('guide-steps').innerHTML=steps.map((s,i)=>`<div class="step ${i===cur?'active':''}"><span class="step-num">${i+1}</span>${s}</div>`).join(''); }
-function exportTemplate(){ const d=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid}))}); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([d],{type:'application/json'})); a.download='stage.json'; a.click(); }
-function importTemplate(){ const i=document.createElement('input'); i.type='file'; i.onchange=async e=>{ const d=JSON.parse(await e.target.files[0].text()); elements.forEach(el=>el.dom.remove()); elements=[]; d.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); saveHistory(); }; i.click(); }
+
+function updateHint(){ const h=document.getElementById('hint-box'); let txt={select:"選択。弧/線上の椅子はドラッグでスライド移動できます。",chair:"配置。",arc:"3点クリック。",line:"2点クリック。",label:"配置。",rect:"配置。",dim:"計測。"}[tool]; h.innerHTML=`💡 ヒント: ${txt}`; }
+function updateGuide(){ const g=document.getElementById('guide-panel'); if(!['arc','line','dim'].includes(tool)){ g.style.display='none'; return; } g.style.display='block'; const steps={arc:['始点','終点','膨らみ'],line:['始点','終点'],dim:['始点','終点']}[tool]; const cur=(tool==='arc'?arcPts:tool==='line'?linePts:dimPts).length; document.getElementById('guide-title').textContent={arc:'⌒ 弧配置',line:'｜ 線配置',dim:'↔ 寸法'}[tool]; document.getElementById('guide-steps').innerHTML=steps.map((s,i)=>`<div class="step ${i===cur?'active':''}"><span class="step-num">${i+1}</span>${s}</div>`).join(''); }
+
+function exportTemplate(){ const d=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid,pathType:e.pathType,pathPts:e.pathPts,pathT:e.pathT}))}); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([d],{type:'application/json'})); a.download='stage.json'; a.click(); }
+function importTemplate(){ const i=document.createElement('input'); i.type='file'; i.onchange=async e=>{ const d=JSON.parse(await e.target.files[0].text()); elements.forEach(el=>el.dom.remove()); elements=[]; d.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); saveHistory(); refreshSVG(); }; i.click(); }
 async function loadPDF(){ const i=document.createElement('input'); i.type='file'; i.accept='.pdf'; i.onchange=async e=>{ const d=new Uint8Array(await e.target.files[0].arrayBuffer()); pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; const pdf=await pdfjsLib.getDocument({data:d}).promise; const page=await pdf.getPage(1); const vp=page.getViewport({scale:1.5}); const cv=document.getElementById('bg'); cv.width=vp.width; cv.height=vp.height; stage.style.width=vp.width+'px'; stage.style.height=vp.height+'px'; await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; cv.style.display='block'; }; i.click(); }
-function exportPNG(){ html2canvas(stage,{scale:2}).then(c=>{ const a=document.createElement('a'); a.download='stage.png'; a.href=c.toDataURL(); a.click(); }); }
-function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); } }
+function exportPNG(){ const prev=svg.innerHTML; svg.innerHTML=''; html2canvas(stage,{scale:2}).then(c=>{ svg.innerHTML=prev; const a=document.createElement('a'); a.download='stage.png'; a.href=c.toDataURL(); a.click(); }); }
+function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); refreshSVG(); } }
 
 window.onload=init;
 </script>
