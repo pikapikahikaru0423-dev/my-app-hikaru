@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>舞台配置図 Pro v19.4</title>
+<title>舞台配置図 Pro v19.7</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -15,21 +15,21 @@ body{display:flex;flex-direction:column;height:100vh;font-family:-apple-system,'
 .tb-group{display:flex;align-items:center;gap:4px;font-size:11px;}
 .tb-sep{width:1px;height:22px;background:#e0e0e0;margin:0 2px;}
 
-button{padding:6px 10px;font-size:11px;border:1px solid #ccc;border-radius:5px;background:white;cursor:pointer;color:#333;white-space:nowrap;transition:background .12s;}
+button{padding:6px 10px;font-size:11px;border:1px solid #ccc;border-radius:5px;background:white;cursor:pointer;white-space:nowrap;transition:background .12s;}
 button:hover{background:#f0f0ee;}
 button.active{background:#e1f5ee;border-color:#1d9e75;color:#0f6e56;font-weight:600;}
-button:disabled{opacity:0.3;cursor:default;}
+button:disabled{opacity:0.3;}
 
-.val-input {width:45px;height:22px;border:1px solid #1d9e75;border-radius:4px;background:#f0f7f5;text-align:center;font-weight:bold;color:#1d9e75;outline:none;font-size:11px;}
+.val-input {width:45px;height:22px;border:1px solid #1d9e75;border-radius:4px;text-align:center;font-weight:bold;color:#1d9e75;font-size:11px;}
 input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
 
 /* Layout */
 #main{display:flex;flex:1;overflow:hidden;}
 #sidebar{width:175px;background:white;border-right:1px solid #ddd;display:flex;flex-direction:column;flex-shrink:0;}
-.tabs{display:flex;border-bottom:1px solid #eee;background:#f9f9f9;}
+.tabs{display:flex;background:#f9f9f9;}
 .tab{flex:1;padding:10px 2px;text-align:center;cursor:pointer;font-size:10px;color:#888;border-bottom:2px solid transparent;}
 .tab.active{border-bottom:2px solid #1d9e75;color:#1d9e75;font-weight:600;background:white;}
-.inst-list{flex:1;overflow-y:auto;padding-bottom:20px;}
+.inst-list{flex:1;overflow-y:auto;}
 .inst-header{padding:8px 10px;font-size:10px;color:#999;background:#fdfdfd;font-weight:bold;border-bottom:1px solid #eee;}
 .inst{padding:8px 10px;font-size:11px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;align-items:center;gap:6px;}
 
@@ -41,33 +41,26 @@ input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
 #svg-layer{position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:3;}
 
 /* Elements */
-.elem{position:absolute;cursor:move;user-select:none;touch-action:none;z-index:10;pointer-events:auto;}
+.elem{position:absolute;cursor:move;user-select:none;z-index:10;}
 .chair{border-radius:50%;border:2px solid;background:white;display:flex;align-items:center;justify-content:center;font-weight:600;width:100%;height:100%;}
-.chair-text{position:absolute;white-space:nowrap;pointer-events:none;text-align:center;}
+.chair-text{position:absolute;white-space:nowrap;pointer-events:none;}
 .elem.selected{outline:2px solid #1d9e75;outline-offset:4px;}
 .elem.grouped-member{box-shadow: 0 0 0 2px rgba(29,158,117,0.3);}
 
-.label-elem{background:white;border:1px solid #aaa;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;padding:2px;}
-.rect-elem{border:2px solid #555;background:rgba(200,200,200,0.1);display:flex;align-items:center;justify-content:center;}
-.dim-elem{pointer-events:auto;}
-.dim-line{position:absolute;height:2px;background:#1d9e75;transform-origin:0 50%;}
-.dim-text{position:absolute;color:#1d9e75;font-weight:bold;font-size:12px;white-space:nowrap;transform:translate(-50%,-120%);}
+.label-elem{background:white;border:1px solid #aaa;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.rect-elem{border:2px solid #555;background:rgba(200,200,200,0.1);}
+.dim-elem .dim-line{position:absolute;height:2px;background:#1d9e75;transform-origin:0 50%;}
+.dim-elem .dim-text{position:absolute;color:#1d9e75;font-weight:bold;font-size:12px;white-space:nowrap;transform:translate(-50%,-120%);}
 
 /* Handles */
-.handle{position:absolute;width:12px;height:12px;background:#1d9e75;border:2px solid white;border-radius:50%;z-index:25;display:none;}
+.handle{position:absolute;width:12px;height:12px;background:#1d9e75;border:2px solid white;border-radius:50%;display:none;z-index:30;}
 .elem.selected .handle{display:block;}
 .nw{top:-6px;left:-6px;cursor:nwse-resize;}
 .se{bottom:-6px;right:-6px;cursor:nwse-resize;}
 .rot{top:-25px;left:calc(50% - 6px);cursor:crosshair;background:#ff9800;}
 
-#guide-panel{position:fixed;top:55px;left:190px;background:white;border:1px solid #ccc;border-radius:8px;padding:12px;box-shadow:0 4px 15px rgba(0,0,0,0.15);display:none;z-index:1000;font-size:12px;min-width:160px;}
-.step{display:flex;align-items:center;gap:8px;margin:5px 0;opacity:0.3;}
-.step.active{opacity:1;color:#1d9e75;font-weight:bold;}
-.step-num{width:18px;height:18px;background:#eee;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;}
-
-#props-bar{padding:5px 12px;background:white;border-top:1px solid #eee;font-size:11px;display:flex;align-items:center;justify-content:space-between;min-height:40px;flex-shrink:0;}
-#props{display:flex;align-items:center;gap:10px;}
-#hint-box{color:#666;background:#f5f5f5;padding:4px 10px;border-radius:4px;border-left:3px solid #1d9e75;}
+#guide-panel{position:fixed;top:55px;left:190px;background:white;border:1px solid #ccc;border-radius:8px;padding:10px;box-shadow:0 4px 15px rgba(0,0,0,0.15);display:none;z-index:1000;font-size:12px;}
+#props-bar{padding:5px 12px;background:white;border-top:1px solid #eee;font-size:11px;display:flex;align-items:center;justify-content:space-between;min-height:40px;}
 </style>
 </head>
 <body>
@@ -84,17 +77,14 @@ input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
-    ズーム:<input type="range" id="zoom-range" min="0.3" max="1.5" step="0.05" value="1.0" oninput="syncZoom(this.value, 'range')">
-    <input type="number" id="zoom-num" class="val-input" min="30" max="150" step="5" value="100" oninput="syncZoom(this.value, 'num')">%
-    サイズ:<input type="range" id="size-range" min="15" max="50" step="1" value="26" oninput="syncSize(this.value, 'range')">
-    <input type="number" id="size-num" class="val-input" min="15" max="50" step="1" value="26" oninput="syncSize(this.value, 'num')">px
+    ズーム:<input type="range" min="0.3" max="1.5" step="0.05" value="1.0" oninput="syncZoom(this.value)">
+    サイズ:<input type="number" id="size-num" class="val-input" value="26" oninput="currentChairSize=parseInt(this.value)">
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
     <button id="undo-btn" onclick="undo()">↩ 戻す</button>
     <button id="redo-btn" onclick="redo()">↪ 進む</button>
     <button onclick="groupSelected()">グループ化</button>
-    <button onclick="ungroupSelected()">解除</button>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group">
@@ -102,19 +92,17 @@ input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
     <button onclick="importTemplate()">📂 テンプレ読込</button>
     <button onclick="loadPDF()">📄 PDF読込</button>
     <button onclick="exportPNG()" style="background:#1d9e75;color:white;">📷 画像書き出し</button>
-    <button onclick="resetCanvas()" style="color:#d33;">⚠ 消去</button>
+    <button onclick="resetCanvas()" style="color:red;">⚠ 消去</button>
   </div>
 </div>
 
 <div id="main">
   <div id="sidebar">
     <div class="tabs">
-      <div class="tab active" id="tab-main-btn" onclick="switchTab('main')">木・金</div>
-      <div class="tab" id="tab-other-btn" onclick="switchTab('other')">その他</div>
+      <div class="tab active" id="tab-main-btn" onclick="switchTab('main')">楽器</div>
       <div class="tab" id="tab-perc-btn" onclick="switchTab('perc')">Perc.</div>
     </div>
     <div id="list-main" class="inst-list"></div>
-    <div id="list-other" class="inst-list" style="display:none"></div>
     <div id="list-perc" class="inst-list" style="display:none"></div>
   </div>
   <div id="canvas-wrap">
@@ -128,241 +116,280 @@ input[type=range]{width:60px;cursor:pointer;vertical-align:middle;}
   </div>
 </div>
 
-<div id="guide-panel">
-  <div id="guide-title" style="font-weight:bold;margin-bottom:8px;"></div>
-  <div id="guide-steps"></div>
-</div>
-
-<div id="props-bar">
-  <div id="props">要素を選択して編集</div>
-  <div id="hint-box">💡 ヒント: ツールを選択してください</div>
-</div>
+<div id="guide-panel"></div>
+<div id="props-bar"><div id="props"></div><div id="hint-box"></div></div>
 
 <script>
 const MAIN_INST=[{l:"Pic",c:"#e35"},{l:"Fl",c:"#e35"},{l:"Ob",c:"#c44"},{l:"B♭Cl",c:"#36a"},{l:"B.Cl",c:"#36a"},{l:"A.Sax",c:"#1a8"},{l:"T.Sax",c:"#1a8"},{l:"B.Sax",c:"#1a8"},{l:"Fg",c:"#c44"},{l:"Tp",c:"#c70"},{l:"Tb",c:"#a84"},{l:"Hr",c:"#84a"},{l:"Tu",c:"#08a"},{l:"Eu",c:"#08a"},{l:"Stb",c:"#555"}];
-const OTHER_INST=[{l:"Cor Angl.",c:"#c44"},{l:"E♭Cl",c:"#36a"},{l:"A.Cl",c:"#36a"},{l:"CA.Cl",c:"#36a"},{l:"S.Sax",c:"#1a8"}];
-const PERC_LABELS=["BD","Chime","Harp","Piano","Vib.","Xlo.","Marb.","Glo.","W.C.","T.-tam","Timb.","Bongos","Congas","StPa","Base","Synth."];
-const PERC_CHAIRS=["Timp.","S.D.","4Tom","S.Cym","C.Cym","Drm","Bongos","Congas"];
+const PERC_CHAIRS=["Timp.","S.D.","4Tom","S.Cym","C.Cym","Drm"];
 
-let elements=[], selectedList=[], tool='select';
-let zoomLevel=1.0, currentChairSize=26, idCounter=0, gCounter=0;
-let currentInst=MAIN_INST[0], isShift=false;
-let draggingObjs=[], resizingObj=null, resizeHandle='', rotatingObj=null, startAng=0, startMouseAng=0;
-let arcPts=[], linePts=[], dimPts=[], history=[], historyIndex=-1;
+let elements=[], selectedList=[], tool='select', zoomLevel=1.0, currentChairSize=26, idCounter=0, gCounter=0;
+let history=[], historyIndex=-1, arcPts=[], linePts=[], dimPts=[], draggingObjs=[], resizingObj=null, rotatingObj=null;
+let currentInst=MAIN_INST[0];
 
-const stage=document.getElementById('stage');
-const svg=document.getElementById('svg-layer');
+const stage=document.getElementById('stage'), svg=document.getElementById('svg-layer');
 
-function init(){ renderList(MAIN_INST,'list-main'); renderList(OTHER_INST,'list-other'); renderPercList(); setupEvents(); saveHistory(); updateHint(); updateGuide(); }
-function renderList(list,id){ const container=document.getElementById(id); list.forEach(inst=>{ const div=document.createElement('div'); div.className='inst'; div.innerHTML=`<span style="width:10px;height:10px;background:${inst.c};border-radius:50%"></span>${inst.l}`; div.onclick=()=>{ currentInst=inst; updateInstSelection(div); if(tool==='select') setTool('chair'); }; container.appendChild(div); }); }
-function renderPercList(){ const container=document.getElementById('list-perc'); const addSec=(title,list,type)=>{ const h=document.createElement('div'); h.className='inst-header'; h.textContent=title; container.appendChild(h); list.forEach(l=>{ const div=document.createElement('div'); div.className='inst'; const isChair = type === 'chair'; div.innerHTML=`<span style="width:10px;height:10px;background:#2a4a8a;border-radius:${isChair?'50%':'2px'}"></span>${l}`; div.onclick=()=>{ updateInstSelection(div); if(isChair){ currentInst={l:l,c:"#2a4a8a"}; setTool('chair'); } else { addElem('label',400,300,{text:l, color:"#2a4a8a", w:60, h:30}); setTool('select'); } }; container.appendChild(div); }); }; addSec("ラベル", PERC_LABELS, "label"); addSec("円形", PERC_CHAIRS, "chair"); }
-function updateInstSelection(el){ document.querySelectorAll('.inst').forEach(e=>e.style.background=''); el.style.background='#e1f5ee'; }
-function switchTab(t){ ['main','other','perc'].forEach(k=>{ document.getElementById(`list-${k}`).style.display=t===k?'block':'none'; document.getElementById(`tab-${k}-btn`).className='tab '+(t===k?'active':''); }); }
+function init(){ 
+  renderList(MAIN_INST, 'list-main'); 
+  renderPercList();
+  setupEvents(); 
+  saveHistory(); 
+  updateHint();
+}
+
+function renderList(list, id){
+  const container=document.getElementById(id);
+  list.forEach(inst=>{
+    const div=document.createElement('div'); div.className='inst';
+    div.innerHTML=`<span style="width:10px;height:10px;background:${inst.c};border-radius:50%"></span>${inst.l}`;
+    div.onclick=()=>{ currentInst=inst; if(tool==='select') setTool('chair'); };
+    container.appendChild(div);
+  });
+}
+function renderPercList(){
+  const container=document.getElementById('list-perc');
+  const h=document.createElement('div'); h.className='inst-header'; h.textContent='打楽器(円形)'; container.appendChild(h);
+  PERC_CHAIRS.forEach(l=>{
+    const div=document.createElement('div'); div.className='inst';
+    div.innerHTML=`<span style="width:10px;height:10px;background:#2a4a8a;border-radius:50%"></span>${l}`;
+    div.onclick=()=>{ currentInst={l:l,c:"#2a4a8a"}; setTool('chair'); };
+    container.appendChild(div);
+  });
+}
+
+function switchTab(t){
+  ['main','perc'].forEach(k=>{
+    document.getElementById(`list-${k}`).style.display=t===k?'block':'none';
+    document.getElementById(`tab-${k}-btn`).className='tab '+(t===k?'active':'');
+  });
+}
 
 function setTool(t){ tool=t; arcPts=[]; linePts=[]; dimPts=[]; refreshSVG(); document.querySelectorAll('button[id^=btn-]').forEach(b=>b.classList.remove('active')); document.getElementById('btn-'+t)?.classList.add('active'); updateHint(); updateGuide(); }
-function syncZoom(val, src){ zoomLevel=(src==='range')?parseFloat(val):parseFloat(val)/100; document.getElementById('zoom-num').value=Math.round(zoomLevel*100); document.getElementById('zoom-range').value=zoomLevel; document.getElementById('zoom-container').style.transform=`scale(${zoomLevel})`; }
-function syncSize(val, src){ currentChairSize=parseInt(val); if(src==='range') document.getElementById('size-num').value=val; else document.getElementById('size-range').value=val; }
+function syncZoom(v){ zoomLevel=parseFloat(v); document.getElementById('zoom-container').style.transform=`scale(${zoomLevel})`; }
 
 function saveHistory(){
-  const s=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid,pathType:e.pathType,pathPts:e.pathPts,pathT:e.pathT}))});
-  history=history.slice(0,historyIndex+1); history.push(s); if(history.length>50)history.shift(); else historyIndex++;
+  const data=elements.map(e=>({...e, dom:null}));
+  history=history.slice(0,historyIndex+1); history.push(JSON.stringify(data));
+  if(history.length>50) history.shift(); else historyIndex++;
   updateHistoryButtons();
 }
 function undo(){ if(historyIndex>0){ historyIndex--; applyState(); } }
 function redo(){ if(historyIndex<history.length-1){ historyIndex++; applyState(); } }
-function applyState(){
-  const s=JSON.parse(history[historyIndex]); elements.forEach(e=>e.dom.remove()); elements=[];
-  s.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); clearSelection(); updateHistoryButtons(); refreshSVG();
-}
 function updateHistoryButtons(){ document.getElementById('undo-btn').disabled=(historyIndex<=0); document.getElementById('redo-btn').disabled=(historyIndex>=history.length-1); }
 
-function addElem(type,x,y,opts={}){
+function applyState(){
+  const data=JSON.parse(history[historyIndex]);
+  elements.forEach(e=>e.dom.remove()); elements=[];
+  data.forEach(d=>addElem(d.type, d.x, d.y, d));
+  refreshSVG();
+}
+
+function addElem(type, x, y, opts={}){
   const id=opts.id||++idCounter;
   const div=document.createElement('div');
   div.className='elem'; div.dataset.id=id;
   div.style.left=x+'px'; div.style.top=y+'px';
   const w=opts.w||(type==='chair'?currentChairSize:80), h=opts.h||(type==='chair'?currentChairSize:30);
-  const ang=opts.angle||0, color=opts.color||(type==='chair'?currentInst.c:'#555');
-  div.style.width=w+'px'; div.style.height=h+'px'; div.style.transform=`rotate(${ang}deg)`;
+  div.style.width=w+'px'; div.style.height=h+'px';
+  div.style.transform=`rotate(${opts.angle||0}deg)`;
   
   if(type==='chair'){
-    div.innerHTML=`<div class="chair" style="border-color:${color};color:${color}"><div class="chair-text" style="font-size:${w/3.2}px">${opts.label||currentInst.l}</div></div>`;
+    div.innerHTML=`<div class="chair" style="border-color:${opts.color};color:${opts.color}"><div class="chair-text" style="font-size:${w/3.2}px">${opts.label}</div></div>`;
   } else if(type==='dim'){
-    div.className='elem dim-elem'; div.innerHTML=`<div class="dim-line" style="width:${w}px;transform:rotate(${ang}deg)"></div><div class="dim-text" style="left:${w/2}px">${opts.text}</div>`;
+    div.className+=' dim-elem'; div.innerHTML=`<div class="dim-line" style="width:${w}px"></div><div class="dim-text" style="left:${w/2}px">${opts.text}</div>`;
   } else {
     div.className+=(type==='label'?' label-elem':' rect-elem');
-    div.style.borderColor=color; div.style.color=color; div.style.borderWidth=(opts.bw||1.5)+'px'; div.textContent=opts.text||'';
-    ['nw','se','rot'].forEach(p=>{ const h=document.createElement('div'); h.className='handle '+p; if(p!=='rot') h.dataset.pos=p; div.appendChild(h); });
+    div.style.borderColor=opts.color; div.style.color=opts.color; div.style.borderWidth=(opts.bw||1.5)+'px'; div.textContent=opts.text||'';
+    ['nw','se','rot'].forEach(p=>{ const h=document.createElement('div'); h.className='handle '+p; if(p!=='rot')h.dataset.pos=p; div.appendChild(h); });
   }
   if(opts.gid) div.classList.add('grouped-member');
   stage.appendChild(div);
-  const rec={id,type,dom:div,x,y,w,h,angle:ang,color,label:opts.label||'',text:opts.text||'',bw:opts.bw||1.5,gid:opts.gid||null,pathType:opts.pathType||null,pathPts:opts.pathPts||null,pathT:opts.pathT!==undefined?opts.pathT:null};
+  const rec={...opts, id, type, dom:div, x, y, w, h, angle:opts.angle||0, color:opts.color, gid:opts.gid||null};
   elements.push(rec); return rec;
 }
 
-// 軌道計算
 function getPosOnPath(type,pts,t){
   if(type==='arc'){
     const [p1,p2,p3]=pts;
     const x=Math.pow(1-t,2)*p1.x+2*(1-t)*t*p3.x+Math.pow(t,2)*p2.x;
     const y=Math.pow(1-t,2)*p1.y+2*(1-t)*t*p3.y+Math.pow(t,2)*p2.y;
     return {x,y};
-  } else if(type==='line'){
+  } else {
     const [p1,p2]=pts;
     return {x:p1.x+(p2.x-p1.x)*t, y:p1.y+(p2.y-p1.y)*t};
   }
-  return null;
 }
 
-// 弧・線配置
-function handleArc(pt){ arcPts.push(pt); updateGuide(); if(arcPts.length===3){ const n=prompt("椅子の数",4); if(n){ const pts=[...arcPts]; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); const pos=getPosOnPath('arc',pts,t); addElem('chair',pos.x-currentChairSize/2,pos.y-currentChairSize/2,{gid,pathType:'arc',pathPts:pts,pathT:t}); } saveHistory(); refreshSVG(); } arcPts=[]; updateGuide(); } }
-function handleLine(pt){ const last=linePts[linePts.length-1], finalPt=last?snap(last,pt):pt; linePts.push(finalPt); updateGuide(); if(linePts.length===2){ const n=prompt("椅子の数",4); if(n){ const pts=[...linePts]; const gid=++gCounter; for(let i=0;i<n;i++){ const t=i/(n-1||1); const pos=getPosOnPath('line',pts,t); addElem('chair',pos.x-currentChairSize/2,pos.y-currentChairSize/2,{gid,pathType:'line',pathPts:pts,pathT:t}); } saveHistory(); refreshSVG(); } linePts=[]; updateGuide(); } }
-function handleDim(pt){ const last=dimPts[dimPts.length-1], finalPt=last?snap(last,pt):pt; dimPts.push(finalPt); updateGuide(); if(dimPts.length===2){ const val=prompt("寸法値","1.0m"); if(val){ const [p1,p2]=dimPts; const dx=p2.x-p1.x, dy=p2.y-p1.y; addElem('dim',p1.x,p1.y,{w:Math.sqrt(dx*dx+dy*dy),angle:Math.atan2(dy,dx)*180/Math.PI,text:val}); saveHistory(); } dimPts=[]; updateGuide(); } }
-
-function onDown(e){
-  let pt=getXY(e);
-  if(e.target.classList.contains('handle')){
-    const rec=elements.find(el=>el.dom===e.target.parentElement);
-    if(e.target.classList.contains('rot')){ rotatingObj=rec; const c={x:rec.x+rec.w/2, y:rec.y+rec.h/2}; startMouseAng=Math.atan2(pt.y-c.y, pt.x-c.x); startAng=rec.angle||0; }
-    else { resizingObj=rec; resizeHandle=e.target.dataset.pos; }
-    e.stopPropagation(); return;
-  }
-  const ed=e.target.closest('.elem');
-  if(ed){
-    const rec=elements.find(el=>el.id==ed.dataset.id);
-    if(tool==='select'){
-      if(e.shiftKey) toggleSelect(rec); else if(!selectedList.includes(rec)) selectSingle(rec);
-      const baseTargets = e.shiftKey ? selectedList : [rec];
-      const allMembers = [];
-      baseTargets.forEach(obj => {
-        if(obj.gid) { elements.filter(el => el.gid === obj.gid).forEach(m => { if(!allMembers.includes(m)) allMembers.push(m); }); }
-        else { if(!allMembers.includes(obj)) allMembers.push(obj); }
-      });
-      draggingObjs = allMembers.map(o => ({obj:o, ox:pt.x-o.x, oy:pt.y-o.y, startPt:pt}));
+function setupEvents(){
+  stage.onpointerdown=e=>{
+    const pt=getXY(e);
+    if(e.target.classList.contains('handle')){
+      const rec=elements.find(el=>el.dom===e.target.parentElement);
+      if(e.target.classList.contains('rot')){
+        rotatingObj=rec; const c={x:rec.x+rec.w/2, y:rec.y+rec.h/2};
+        rotatingObj.startMouseAng=Math.atan2(pt.y-c.y, pt.x-c.x); rotatingObj.startAng=rec.angle;
+      } else { resizingObj=rec; resizingObj.handle=e.target.dataset.pos; }
+      return;
     }
-    return;
-  }
-  if(tool==='select') clearSelection();
-  else if(tool==='chair') addElem('chair',pt.x-currentChairSize/2,pt.y-currentChairSize/2);
-  else if(tool==='label') addElem('label',pt.x-30,pt.y-15,{text:prompt('内容','')||'ラベル', color:"#2a4a8a", w:60, h:30});
-  else if(tool==='rect') addElem('rect',pt.x-50,pt.y-30);
-  else if(tool==='arc') handleArc(pt);
-  else if(tool==='line') handleLine(pt);
-  else if(tool==='dim') handleDim(pt);
-}
-
-function onMove(e){
-  let pt=getXY(e);
-  if(draggingObjs.length){
-    draggingObjs.forEach(d=>{
-      if(d.obj.pathType && d.obj.pathPts){
-        // パス追従ロジック
-        const pts=d.obj.pathPts;
-        if(d.obj.pathType==='line'){
-          const [p1,p2]=pts;
-          const len2=(p2.x-p1.x)**2+(p2.y-p1.y)**2;
-          let t=((pt.x-p1.x)*(p2.x-p1.x)+(pt.y-p1.y)*(p2.y-p1.y))/len2;
-          t=Math.max(0,Math.min(1,t)); d.obj.pathT=t;
-          const pos=getPosOnPath('line',pts,t); d.obj.x=pos.x-d.obj.w/2; d.obj.y=pos.y-d.obj.h/2;
-        } else if(d.obj.pathType==='arc'){
-          // 弧のスライド（最近傍探索の簡易版：マウス角度でTを推定）
-          const [p1,p2,p3]=pts;
-          let bestT=0, minDist=99999;
-          for(let i=0;i<=100;i++){
-            const testT=i/100; const p=getPosOnPath('arc',pts,testT);
-            const dist=(p.x-pt.x)**2+(p.y-pt.y)**2; if(dist<minDist){minDist=dist; bestT=testT;}
-          }
-          d.obj.pathT=bestT; const pos=getPosOnPath('arc',pts,bestT);
-          d.obj.x=pos.x-d.obj.w/2; d.obj.y=pos.y-d.obj.h/2;
-        }
-      } else {
-        d.obj.x=pt.x-d.ox; d.obj.y=pt.y-d.oy;
+    const ed=e.target.closest('.elem');
+    if(ed){
+      const rec=elements.find(el=>el.id==ed.dataset.id);
+      if(!selectedList.includes(rec)){
+        elements.forEach(el=>el.dom.classList.remove('selected'));
+        selectedList=[rec]; rec.dom.classList.add('selected');
       }
-      d.obj.dom.style.left=d.obj.x+'px'; d.obj.dom.style.top=d.obj.y+'px';
-    });
-  }
-  if(resizingObj){ const r=resizingObj; if(resizeHandle==='se'){ r.w=Math.max(20,pt.x-r.x); r.h=Math.max(20,pt.y-r.y); } else if(resizeHandle==='nw'){ const or=r.x+r.w, ob=r.y+r.h; r.x=pt.x; r.y=pt.y; r.w=Math.max(20,or-pt.x); r.h=Math.max(20,ob-pt.y); } r.dom.style.left=r.x+'px'; r.dom.style.top=r.y+'px'; r.dom.style.width=r.w+'px'; r.dom.style.height=r.h+'px'; }
-  if(rotatingObj){ const r=rotatingObj, c={x:r.x+r.w/2, y:r.y+r.h/2}; let a=startAng+(Math.atan2(pt.y-c.y, pt.x-c.x)-startMouseAng)*180/Math.PI; if(isShift) a=Math.round(a/45)*45; r.angle=a; r.dom.style.transform=`rotate(${r.angle}deg)`; }
-  drawPreviews(pt);
+      const targets=rec.gid?elements.filter(el=>el.gid===rec.gid):[rec];
+      draggingObjs=targets.map(t=>({obj:t, ox:pt.x-t.x, oy:pt.y-t.y}));
+      updateProps(); return;
+    }
+    
+    if(tool==='arc'){
+      arcPts.push(pt); updateGuide(); if(arcPts.length===3){
+        const n=prompt("数",5); if(n){
+          const gid=++gCounter; const pts=[...arcPts];
+          for(let i=0;i<n;i++){
+            const t=i/(n-1||1); const p=getPosOnPath('arc',pts,t);
+            addElem('chair',p.x-currentChairSize/2,p.y-currentChairSize/2,{gid,pathType:'arc',pathPts:pts,pathT:t,color:currentInst.c,label:currentInst.l});
+          }
+          saveHistory();
+        }
+        arcPts=[]; updateGuide(); refreshSVG();
+      }
+    } else if(tool==='line'){
+      linePts.push(pt); updateGuide(); if(linePts.length===2){
+        const n=prompt("数",5); if(n){
+          const gid=++gCounter; const pts=[...linePts];
+          for(let i=0;i<n;i++){
+            const t=i/(n-1||1); const p=getPosOnPath('line',pts,t);
+            addElem('chair',p.x-currentChairSize/2,p.y-currentChairSize/2,{gid,pathType:'line',pathPts:pts,pathT:t,color:currentInst.c,label:currentInst.l});
+          }
+          saveHistory();
+        }
+        linePts=[]; updateGuide(); refreshSVG();
+      }
+    } else if(tool==='chair'){ addElem('chair',pt.x-currentChairSize/2,pt.y-currentChairSize/2,{color:currentInst.c,label:currentInst.l}); saveHistory();
+    } else if(tool==='label'){ addElem('label',pt.x-40,pt.y-15,{text:prompt('内容','')||'ラベル',color:'#555'}); saveHistory();
+    } else if(tool==='rect'){ addElem('rect',pt.x-50,pt.y-25,{color:'#555'}); saveHistory();
+    } else if(tool==='dim'){
+      dimPts.push(pt); if(dimPts.length===2){
+        const val=prompt("寸法値","1.0m"); if(val){
+          const dx=dimPts[1].x-dimPts[0].x, dy=dimPts[1].y-dimPts[0].y;
+          addElem('dim',dimPts[0].x,dimPts[0].y,{w:Math.sqrt(dx*dx+dy*dy),angle:Math.atan2(dy,dx)*180/Math.PI,text:val,color:'#1d9e75'});
+          saveHistory();
+        }
+        dimPts=[];
+      }
+    }
+  };
+
+  window.onpointermove=e=>{
+    const pt=getXY(e);
+    if(draggingObjs.length){
+      draggingObjs.forEach(d=>{
+        if(d.obj.pathType && d.obj.pathPts){
+          let bestT=0, minD=999999;
+          for(let i=0;i<=100;i++){
+            const p=getPosOnPath(d.obj.pathType, d.obj.pathPts, i/100);
+            const dist=(p.x-pt.x)**2+(p.y-pt.y)**2; if(dist<minD){minD=dist; bestT=i/100;}
+          }
+          const pos=getPosOnPath(d.obj.pathType, d.obj.pathPts, bestT);
+          d.obj.x=pos.x-d.obj.w/2; d.obj.y=pos.y-d.obj.h/2;
+        } else { d.obj.x=pt.x-d.ox; d.obj.y=pt.y-d.oy; }
+        d.obj.dom.style.left=d.obj.x+'px'; d.obj.dom.style.top=d.obj.y+'px';
+      });
+    }
+    if(resizingObj){
+      const r=resizingObj; if(r.handle==='se'){ r.w=Math.max(20,pt.x-r.x); r.h=Math.max(20,pt.y-r.y); }
+      r.dom.style.width=r.w+'px'; r.dom.style.height=r.h+'px';
+    }
+    if(rotatingObj){
+      const r=rotatingObj, c={x:r.x+r.w/2, y:r.y+r.h/2};
+      r.angle=r.startAng+(Math.atan2(pt.y-c.y, pt.x-c.x)-r.startMouseAng)*180/Math.PI;
+      r.dom.style.transform=`rotate(${r.angle}deg)`;
+    }
+    if(['arc','line','dim'].includes(tool)) drawPreviews(pt);
+  };
+  window.onpointerup=()=>{ if(draggingObjs.length||resizingObj||rotatingObj)saveHistory(); draggingObjs=[]; resizingObj=null; rotatingObj=null; };
 }
-function onUp(){ if(draggingObjs.length||resizingObj||rotatingObj) saveHistory(); draggingObjs=[]; resizingObj=null; rotatingObj=null; }
 
-function selectSingle(r){ clearSelection(); selectedList=[r]; r.dom.classList.add('selected'); updateProps(); }
-function toggleSelect(r){ if(selectedList.includes(r)) { r.dom.classList.remove('selected'); selectedList=selectedList.filter(x=>x!==r); } else { r.dom.classList.add('selected'); selectedList.push(r); } updateProps(); }
-function clearSelection(){ selectedList.forEach(r=>r.dom.classList.remove('selected')); selectedList=[]; updateProps(); }
-
-function groupSelected(){ if(selectedList.length<2)return; const gid=++gCounter; selectedList.forEach(s=>{s.gid=gid; s.dom.classList.add('grouped-member');}); saveHistory(); }
-function ungroupSelected(){
-  const gids=new Set(); selectedList.forEach(s=>{if(s.gid)gids.add(s.gid);}); if(gids.size===0)return;
-  elements.forEach(el=>{if(gids.has(el.gid)){el.gid=null; el.dom.classList.remove('grouped-member'); el.pathType=null; el.pathPts=null;}});
-  updateProps(); saveHistory(); refreshSVG();
-}
-
-function updateProps(){
-  const p=document.getElementById('props'); if(!selectedList.length){ p.textContent='要素を選択して編集'; return; }
-  const s=selectedList[0]; const hasGroup=selectedList.some(el=>el.gid);
-  let h=`<button onclick="clearSelection()" style="background:#eee;">解除</button> <button onclick="deleteSelected()" style="color:red">削除</button> `;
-  if(hasGroup) h+=`<button onclick="ungroupSelected()">グループ解除</button> `;
-  if(s.type!=='chair' && s.type!=='dim'){ h+=`色:<input type="color" value="${s.color}" oninput="updateSel('color',this.value)"> `; }
-  h+=`内容:<input type="text" value="${s.type==='chair'?s.label:s.text}" oninput="updateSel('${s.type==='chair'?'label':'text'}',this.value)">`;
-  p.innerHTML=h;
-}
-function updateSel(k,v){ selectedList.forEach(s=>{ s[k]=v; if(k==='color'){s.dom.style.color=v;s.dom.style.borderColor=v;} if(k==='label')s.dom.querySelector('.chair-text').textContent=v; if(k==='text'){ if(s.type==='dim') s.dom.querySelector('.dim-text').textContent=v; else { const hs=s.dom.querySelectorAll('.handle'); s.dom.textContent=v; hs.forEach(h=>s.dom.appendChild(h)); } } }); saveHistory(); }
-function deleteSelected(){ 
-  const targets=[]; selectedList.forEach(s=>{ if(s.gid) elements.filter(el=>el.gid===s.gid).forEach(m=>{if(!targets.includes(m))targets.push(m);}); else if(!targets.includes(s))targets.push(s); });
-  targets.forEach(t=>{ t.dom.remove(); elements=elements.filter(e=>e.id!==t.id); });
-  clearSelection(); saveHistory(); refreshSVG();
-}
-
-function setupEvents(){ stage.addEventListener('pointerdown',onDown); window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp); window.addEventListener('keydown', e=>{ if(e.key==='Shift') isShift=true; if(e.ctrlKey&&e.key==='z') undo(); if(e.ctrlKey&&e.key==='y') redo(); if(e.key==='Delete'||e.key==='Backspace') deleteSelected(); }); window.addEventListener('keyup', e=>{ if(e.key==='Shift') isShift=false; }); }
-function getXY(e){ const r=stage.getBoundingClientRect(); return {x:(e.clientX-r.left)/zoomLevel, y:(e.clientY-r.top)/zoomLevel}; }
-function snap(p1, p2) { if(!isShift) return p2; const dx=Math.abs(p2.x-p1.x), dy=Math.abs(p2.y-p1.y); return dx>dy?{x:p2.x,y:p1.y}:{x:p1.x,y:p2.y}; }
-
-// ガイド線描画
 function refreshSVG(){
   svg.innerHTML='';
   const gids=new Set();
   elements.forEach(el=>{
     if(el.gid && el.pathType && el.pathPts && !gids.has(el.gid)){
-      gids.add(el.gid);
-      if(el.pathType==='arc'){
-        const [p1,p2,p3]=el.pathPts;
-        const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-        p.setAttribute('d',`M${p1.x},${p1.y} Q${p3.x},${p3.y} ${p2.x},${p2.y}`);
-        p.setAttribute('stroke','rgba(29,158,117,0.4)'); p.setAttribute('fill','none'); p.setAttribute('stroke-dasharray','5,5');
-        svg.appendChild(p);
-      } else if(el.pathType==='line'){
-        const [p1,p2]=el.pathPts;
-        const l=document.createElementNS('http://www.w3.org/2000/svg','line');
-        l.setAttribute('x1',p1.x); l.setAttribute('y1',p1.y); l.setAttribute('x2',p2.x); l.setAttribute('y2',p2.y);
-        l.setAttribute('stroke','rgba(29,158,117,0.4)'); l.setAttribute('stroke-dasharray','5,5');
-        svg.appendChild(l);
-      }
+      gids.add(el.gid); const [p1,p2,p3]=el.pathPts;
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      if(el.pathType==='arc') p.setAttribute('d',`M${p1.x},${p1.y} Q${p3.x},${p3.y} ${p2.x},${p2.y}`);
+      else p.setAttribute('d',`M${p1.x},${p1.y} L${p2.x},${p2.y}`);
+      p.setAttribute('stroke','rgba(29,158,117,0.4)'); p.setAttribute('fill','none'); p.setAttribute('stroke-dasharray','5,5'); p.setAttribute('stroke-width','2');
+      svg.appendChild(p);
     }
   });
 }
 
 function drawPreviews(pt){
   refreshSVG();
-  if(arcPts.length===1) drawLine(arcPts[0],pt);
-  if(arcPts.length===2) {
+  if(arcPts.length===1) drawLineSVG(arcPts[0],pt);
+  if(arcPts.length===2){
     const p=document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('d',`M${arcPts[0].x},${arcPts[0].y} Q${pt.x},${pt.y} ${arcPts[1].x},${arcPts[1].y}`);
     p.setAttribute('stroke','#1d9e75'); p.setAttribute('fill','none'); svg.appendChild(p);
   }
-  if(linePts.length===1) drawLine(linePts[0], snap(linePts[0],pt));
-  if(dimPts.length===1) drawLine(dimPts[0], snap(dimPts[0],pt));
+  if(linePts.length===1) drawLineSVG(linePts[0],pt);
+  if(dimPts.length===1) drawLineSVG(dimPts[0],pt);
 }
-function drawLine(p1,p2){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',p1.x);l.setAttribute('y1',p1.y);l.setAttribute('x2',p2.x);l.setAttribute('y2',p2.y);l.setAttribute('stroke','#1d9e75');svg.appendChild(l); }
+function drawLineSVG(p1,p2){
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',p1.x); l.setAttribute('y1',p1.y); l.setAttribute('x2',p2.x); l.setAttribute('y2',p2.y);
+  l.setAttribute('stroke','#1d9e75'); svg.appendChild(l);
+}
 
-function updateHint(){ const h=document.getElementById('hint-box'); let txt={select:"選択。弧/線上の椅子はドラッグでスライド移動できます。",chair:"配置。",arc:"3点クリック。",line:"2点クリック。",label:"配置。",rect:"配置。",dim:"計測。"}[tool]; h.innerHTML=`💡 ヒント: ${txt}`; }
-function updateGuide(){ const g=document.getElementById('guide-panel'); if(!['arc','line','dim'].includes(tool)){ g.style.display='none'; return; } g.style.display='block'; const steps={arc:['始点','終点','膨らみ'],line:['始点','終点'],dim:['始点','終点']}[tool]; const cur=(tool==='arc'?arcPts:tool==='line'?linePts:dimPts).length; document.getElementById('guide-title').textContent={arc:'⌒ 弧配置',line:'｜ 線配置',dim:'↔ 寸法'}[tool]; document.getElementById('guide-steps').innerHTML=steps.map((s,i)=>`<div class="step ${i===cur?'active':''}"><span class="step-num">${i+1}</span>${s}</div>`).join(''); }
+function updateHint(){ document.getElementById('hint-box').textContent="💡 ヒント: "+{select:"選択・移動",chair:"クリック配置",arc:"3点クリック",line:"2点クリック",label:"文字配置",rect:"枠配置",dim:"2点間計測"}[tool]; }
+function updateGuide(){
+  const g=document.getElementById('guide-panel');
+  if(!['arc','line','dim'].includes(tool)){ g.style.display='none'; return; }
+  g.style.display='block'; const cur=(tool==='arc'?arcPts:tool==='line'?linePts:dimPts).length;
+  g.textContent=`${{arc:'弧',line:'線',dim:'寸法'}[tool]}配置: ${cur+1}点目をクリック`;
+}
 
-function exportTemplate(){ const d=JSON.stringify({elements:elements.map(e=>({type:e.type,x:e.x,y:e.y,w:e.w,h:e.h,angle:e.angle,color:e.color,label:e.label,text:e.text,bw:e.bw,gid:e.gid,pathType:e.pathType,pathPts:e.pathPts,pathT:e.pathT}))}); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([d],{type:'application/json'})); a.download='stage.json'; a.click(); }
-function importTemplate(){ const i=document.createElement('input'); i.type='file'; i.onchange=async e=>{ const d=JSON.parse(await e.target.files[0].text()); elements.forEach(el=>el.dom.remove()); elements=[]; d.elements.forEach(en=>addElem(en.type,en.x,en.y,en)); saveHistory(); refreshSVG(); }; i.click(); }
-async function loadPDF(){ const i=document.createElement('input'); i.type='file'; i.accept='.pdf'; i.onchange=async e=>{ const d=new Uint8Array(await e.target.files[0].arrayBuffer()); pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; const pdf=await pdfjsLib.getDocument({data:d}).promise; const page=await pdf.getPage(1); const vp=page.getViewport({scale:1.5}); const cv=document.getElementById('bg'); cv.width=vp.width; cv.height=vp.height; stage.style.width=vp.width+'px'; stage.style.height=vp.height+'px'; await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; cv.style.display='block'; }; i.click(); }
-function exportPNG(){ const prev=svg.innerHTML; svg.innerHTML=''; html2canvas(stage,{scale:2}).then(c=>{ svg.innerHTML=prev; const a=document.createElement('a'); a.download='stage.png'; a.href=c.toDataURL(); a.click(); }); }
-function resetCanvas(){ if(confirm("全て消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); refreshSVG(); } }
+function updateProps(){
+  const p=document.getElementById('props'); if(!selectedList.length) { p.innerHTML=''; return; }
+  const s=selectedList[0];
+  p.innerHTML=`内容:<input type="text" value="${s.type==='chair'?s.label:s.text}" oninput="updateSelVal(this.value)"> 
+               <button onclick="deleteSelected()" style="color:red">削除</button>`;
+}
+function updateSelVal(v){ selectedList.forEach(s=>{ if(s.type==='chair'){ s.label=v; s.dom.querySelector('.chair-text').textContent=v; } else { s.text=v; s.dom.childNodes[0].textContent=v; } }); saveHistory(); }
+function deleteSelected(){ selectedList.forEach(s=>{ s.dom.remove(); elements=elements.filter(el=>el.id!==s.id); }); selectedList=[]; updateProps(); saveHistory(); refreshSVG(); }
+
+function groupSelected(){ if(selectedList.length<2)return; const gid=++gCounter; selectedList.forEach(s=>{s.gid=gid; s.dom.classList.add('grouped-member');}); saveHistory(); refreshSVG(); }
+
+async function loadPDF(){
+  const i=document.createElement('input'); i.type='file'; i.accept='.pdf';
+  i.onchange=async e=>{
+    const file=e.target.files[0]; const reader=new FileReader();
+    reader.onload=async function(){
+      const typedarray=new Uint8Array(this.result);
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf=await pdfjsLib.getDocument(typedarray).promise; const page=await pdf.getPage(1);
+      const viewport=page.getViewport({scale:1.5}); const cv=document.getElementById('bg');
+      cv.width=viewport.width; cv.height=viewport.height; stage.style.width=viewport.width+'px'; stage.style.height=viewport.height+'px';
+      await page.render({canvasContext:cv.getContext('2d'), viewport}).promise; cv.style.display='block';
+    }; reader.readAsArrayBuffer(file);
+  }; i.click();
+}
+
+function exportPNG(){ const prev=svg.innerHTML; svg.innerHTML=''; html2canvas(stage).then(c=>{ const a=document.createElement('a'); a.download='stage.png'; a.href=c.toDataURL(); a.click(); svg.innerHTML=prev; }); }
+function exportTemplate(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(elements.map(e=>({...e,dom:null})))],{type:'application/json'})); a.download='stage.json'; a.click(); }
+function importTemplate(){
+  const i=document.createElement('input'); i.type='file';
+  i.onchange=async e=>{
+    const data=JSON.parse(await e.target.files[0].text());
+    elements.forEach(el=>el.dom.remove()); elements=[];
+    data.forEach(d=>addElem(d.type, d.x, d.y, d)); refreshSVG();
+  }; i.click();
+}
+function resetCanvas(){ if(confirm("消去しますか？")){ elements.forEach(e=>e.dom.remove()); elements=[]; saveHistory(); refreshSVG(); } }
+function getXY(e){ const r=stage.getBoundingClientRect(); return {x:(e.clientX-r.left)/zoomLevel, y:(e.clientY-r.top)/zoomLevel}; }
 
 window.onload=init;
 </script>
